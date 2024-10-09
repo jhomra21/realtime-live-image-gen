@@ -5,7 +5,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 > [!IMPORTANT]
 > The application is deployed on Cloudflare Pages and can be accessed at:
 >
-> [https://realtime-live-image-gen.pages.dev/](https://realtime-live-image-gen.pages.dev/).
+>    [https://realtime-live-image-gen.pages.dev/](https://realtime-live-image-gen.pages.dev/)
 
 ## Features
 
