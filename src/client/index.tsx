@@ -3,6 +3,8 @@ import { createSignal, createEffect, Show, For } from 'solid-js'
 import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import { debounce } from '@solid-primitives/scheduled'
 import { downloadImage } from '../utils/imageUtils'
+import { Tooltip } from '../components/ui/tooltip'
+
 import '../app.css'  // Import the app.css file
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
@@ -35,10 +37,10 @@ const AppContent = () => {
     "A whimsical forest scene with magical creatures and glowing plants"
   ]
 
-  const handlePremadePromptClick = (selectedPrompt: string) => {
-    setPrompt(selectedPrompt)
-    setShowPremadePrompts(false)
-  }
+  const handlePremadePromptSelect = (event: Event) => {
+    const select = event.target as HTMLSelectElement;
+    setPrompt(select.value);
+  };
 
   const debouncedSetPrompt = debounce((value: string) => {
     setDebouncedPrompt(value.trim())
@@ -123,12 +125,18 @@ const AppContent = () => {
     <div class="flex min-h-screen flex-col bg-gray-900 text-gray-100 p-4 sm:p-6">
       <header class="mb-8">
         <h1 class="text-4xl font-bold text-blue-300 mb-6">Real-Time AI Image Generator</h1>
-        <button
-          onClick={() => setShowAPIKeyModal(true)}
-          class="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Enter API Key
-        </button>
+        <div class="flex items-center mb-2">
+          <Tooltip content="API key is optional. Enter your key for higher quality results and faster generation.">
+            <button
+              onClick={() => setShowAPIKeyModal(true)}
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Enter API Key
+            </button>
+          </Tooltip>
+          <span class="ml-2 text-sm text-gray-400">(Optional)</span>
+        </div>
+        <p class="text-sm text-gray-400 mb-4">You can use the generator without an API key, but entering one will provide better results.</p>
         <div class="flex items-center">
           <input
             type="checkbox"
@@ -150,9 +158,10 @@ const AppContent = () => {
           onClick={handleOutsideClick}
         >
           <div class="modal-content bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-            <h2 class="text-xl font-semibold text-gray-100 mb-4">Enter Your API Key</h2>
+            <h2 class="text-xl font-semibold text-gray-100 mb-2">Enter Your API Key</h2>
+            <p class="text-sm text-gray-400 mb-4">API key is optional. Enter your Together AI API key for higher quality results and faster generation.</p>
             <input
-              placeholder="Enter your API key"
+              placeholder="Enter your API key (optional)"
               type="password"
               value={userAPIKey()}
               class="w-full p-2 mb-2 border border-gray-700 rounded-md bg-gray-700 text-white"
@@ -192,34 +201,25 @@ const AppContent = () => {
             required
             value={prompt()}
             onInput={(e) => setPrompt(e.currentTarget.value)}
-            class="w-full p-2 border border-gray-700 rounded-md resize-none transition-all duration-300 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 bg-gray-800 text-white"
+            class="w-full p-2 border border-gray-700 rounded-md resize-none transition-all duration-300 focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 bg-gray-800 text-white mb-4"
           />
+          
+          <select
+            value={prompt()}
+            onChange={handlePremadePromptSelect}
+            class="w-full p-2 border border-gray-700 rounded-md bg-gray-800 text-white"
+          >
+            <option value="" disabled>Select a premade prompt</option>
+            {premadePrompts.map((premadePrompt) => (
+              <option value={premadePrompt}>
+                {premadePrompt}
+              </option>
+            ))}
+          </select>
         </form>
-
-        <button
-          onClick={() => setShowPremadePrompts(!showPremadePrompts())}
-          class="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          {showPremadePrompts() ? 'Hide' : 'Show'} Premade Prompts
-        </button>
 
         <Show when={error()}>
           <div class="text-red-400 mb-4">{error()}</div>
-        </Show>
-
-        <Show when={showPremadePrompts() && !isGeneratingNew()}>
-          <div class="w-full max-w-2xl grid grid-cols-1 gap-4 mb-6">
-            <For each={premadePrompts}>
-              {(premadePrompt) => (
-                <button
-                  onClick={() => handlePremadePromptClick(premadePrompt)}
-                  class="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors text-left h-full"
-                >
-                  {premadePrompt}
-                </button>
-              )}
-            </For>
-          </div>
         </Show>
 
         <div class="w-full max-w-2xl aspect-video bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center relative border-2 border-gray-700 mx-4 sm:mx-0 mt-4">
