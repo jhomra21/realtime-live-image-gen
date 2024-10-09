@@ -1,0 +1,9 @@
+name = "your-worker-name"
+main = "path-to-hono-server"
+compatibility_date = "2023-01-01"
+
+[vars]
+TOGETHER_API_KEY=""
+HELICONE_API_KEY=""
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
