@@ -1,0 +1,9 @@
+name = "realtime-image-gen-api"
+main = "src/server.ts"
+compatibility_date = "2023-01-01"
+
+[vars]
+TOGETHER_API_KEY="d535265d9bca3743ff9cfae3dbe4b6e1d96bb341cdb8173fd568813e90159ce4"
+HELICONE_API_KEY=''
+UPSTASH_REDIS_REST_URL="https://modest-vulture-28373.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="AW7VAAIjcDFlZDg2MjE3ZDdiZjE0MzQxYjEwZDllMzJjYWM3YjJmOHAxMA"

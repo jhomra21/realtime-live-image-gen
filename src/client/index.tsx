@@ -3,8 +3,9 @@ import { createSignal, createEffect, Show } from 'solid-js'
 import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import { debounce } from '@solid-primitives/scheduled'
 import { downloadImage } from '../utils/imageUtils'
+import '../app.css'  // Import the app.css file
 
-const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
 const queryClient = new QueryClient({
   defaultOptions: {
