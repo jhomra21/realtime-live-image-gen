@@ -1,14 +1,14 @@
 # Real-Time AI Image Generator
 
-This project is a real-time AI image generator built using SolidJS, Hono, and Together AI. It allows users to input a text prompt and generate images based on that prompt using AI models. The application supports optional API key input for personalized usage and includes a consistency mode to maintain visual consistency across generated images.
+This project is a real-time AI image generator built using **SolidJS, Hono,** and **Together AI**. It allows users to input a text prompt and generate images based on that prompt using AI models. The application supports optional API key input for personalized usage and includes a **consistency mode** to maintain visual consistency across generated images.
 
 ## Features
 
 - **Real-Time Image Generation**: Generate images based on text prompts using AI models.
 - **Optional API Key**: Users can input their own API key for personalized usage.
-- **Consistency Mode**: Enable consistency mode to maintain visual consistency across generated images.
+- **Consistency Mode**: Enable consistency mode to maintain visual consistency across generated images. Uses custom seeding to achieve this.
 - **Download Functionality**: Download generated images directly from the application.
-- **Responsive Design**: Built with a responsive UI using Tailwind CSS.
+- **Design**: Barebones simple design using Tailwind CSS.
 
 ## Technologies Used
 
