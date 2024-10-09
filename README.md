@@ -2,6 +2,9 @@
 
 This project is a real-time AI image generator built using **SolidJS, Hono,** and **Together AI**. It allows users to input a text prompt and generate images based on that prompt using AI models. The application supports optional API key input for personalized usage and includes a **consistency mode** to maintain visual consistency across generated images.
 
+> [!ATTENTION]
+> The application is deployed on Cloudflare Pages and can be accessed at [https://realtime-live-image-gen.pages.dev/](https://realtime-live-image-gen.pages.dev/).
+
 ## Features
 
 - **Real-Time Image Generation**: Generate images based on text prompts using AI models.
@@ -56,8 +59,9 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 3. Open your browser and navigate to `http://localhost:3000` to access the application.
 
 
->[!CAUTION]
-> **Never share your API keys publicly or with untrusted parties.** API keys are sensitive credentials that can be misused if exposed. Always keep them secure and private.
+> [!CAUTION]
+> **Never share your API keys publicly or with untrusted parties.** API keys are sensitive credentials that can be misused if exposed. 
+> Always keep them secure and private.
 
 > [!TIP]
 > Make sure to properly set .gitignore and .env if you are cloning this repo.
