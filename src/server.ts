@@ -19,6 +19,7 @@ if (Bun.env.HELICONE_API_KEY) {
     baseURL: "https://together.helicone.ai/v1",
     defaultHeaders: {
       "Helicone-Auth": `Bearer ${Bun.env.HELICONE_API_KEY}`,
+      "Helicone-Property-BYOK": "false", // This will be set to "true" when a user API key is provided
     }
   }
 }
@@ -28,7 +29,7 @@ if (Bun.env.UPSTASH_REDIS_REST_URL) {
     redis: Redis.fromEnv(),
     limiter: Ratelimit.fixedWindow(100, "1440 m"),
     analytics: true,
-    prefix: "blinkshot", // Changed to match the provided snippet
+    prefix: "juan-realtime-image-gen", // Changed to match the provided snippet
   })
 }
 
@@ -38,18 +39,19 @@ app.post('/api/generateImages', async (c) => {
   const schema = z.object({
     prompt: z.string(),
     userAPIKey: z.string().optional(),
+    iterativeMode: z.boolean().optional().default(false),
   })
 
   try {
     const body = await c.req.json()
-    const { prompt, userAPIKey } = schema.parse(body)
+    const { prompt, userAPIKey, iterativeMode } = schema.parse(body)
 
     if (userAPIKey) {
       client.apiKey = userAPIKey
     }
 
     if (ratelimit && !userAPIKey) {
-      const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+      const ip = c.req.header('x-forwarded-for')?.split(',')[0] || c.req.header('x-real-ip') || '0.0.0.0'
       const { success } = await ratelimit.limit(ip)
       if (!success) {
         return c.json({ error: "No requests left. Please add your own API key or try again in 24h." }, 429)
@@ -62,6 +64,7 @@ app.post('/api/generateImages', async (c) => {
       width: 1024,
       height: 768,
       steps: 2,
+      seed: iterativeMode ? 123 : undefined,
       // @ts-expect-error - this is not typed in the API
       response_format: "base64",
     })
@@ -69,7 +72,7 @@ app.post('/api/generateImages', async (c) => {
     return c.json(response.data[0])
   } catch (error: any) {
     console.error('Error generating image:', error)
-    return c.json({ error: error.message || 'An error occurred while generating the image' }, 500)
+    return c.json({ error: error.toString() }, 500)
   } finally {
     // Reset the API key to the original value if it was changed
     if (options.apiKey) {
