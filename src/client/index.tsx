@@ -19,6 +19,7 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   const [prompt, setPrompt] = createSignal('')
   const [userAPIKey, setUserAPIKey] = createSignal('')
+  const [apiKeyError, setApiKeyError] = createSignal('')
   const [error, setError] = createSignal('')
   const [debouncedPrompt, setDebouncedPrompt] = createSignal('')
   const [isGeneratingNew, setIsGeneratingNew] = createSignal(false)
@@ -26,6 +27,7 @@ const AppContent = () => {
   const [consistencyMode, setConsistencyMode] = createSignal(false)
   const [showDebug, setShowDebug] = createSignal(false)
   const [showPremadePrompts, setShowPremadePrompts] = createSignal(false)
+  const [showAPIKeyModal, setShowAPIKeyModal] = createSignal(false)
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -89,22 +91,44 @@ const AppContent = () => {
     }
   }
 
+  const validateAPIKey = (key: string) => {
+    // This is a basic validation. Adjust according to the actual format of Together AI API keys
+    const apiKeyRegex = /^[a-zA-Z0-9]{64}$/;
+    if (!key) {
+      setApiKeyError('API key is required');
+      return false;
+    }
+    if (!apiKeyRegex.test(key)) {
+      setApiKeyError('Invalid API key format');
+      return false;
+    }
+    setApiKeyError('');
+    return true;
+  }
+
+  const handleAPIKeySubmit = () => {
+    if (validateAPIKey(userAPIKey())) {
+      setShowAPIKeyModal(false);
+    }
+  }
+
+  const handleOutsideClick = (e: MouseEvent) => {
+    const modalContent = (e.target as HTMLElement).closest('.modal-content');
+    if (!modalContent) {
+      setShowAPIKeyModal(false);
+    }
+  }
+
   return (
     <div class="flex min-h-screen flex-col bg-gray-900 text-gray-100 p-4 sm:p-6">
       <header class="mb-8">
         <h1 class="text-4xl font-bold text-blue-300 mb-6">Real-Time AI Image Generator</h1>
-        <div class="flex flex-col sm:flex-row sm:items-center mb-6 p-4 bg-gray-800 rounded-lg">
-          <label class="text-sm text-gray-300 mr-2">
-            [Optional] Together API Key:
-          </label>
-          <input
-            placeholder="Enter your API key"
-            type="password"
-            value={userAPIKey()}
-            class="mt-1 sm:mt-0 p-2 border border-gray-700 rounded-md flex-grow max-w-md bg-gray-700 text-white"
-            onInput={(e) => setUserAPIKey(e.currentTarget.value)}
-          />
-        </div>
+        <button
+          onClick={() => setShowAPIKeyModal(true)}
+          class="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Enter API Key
+        </button>
         <div class="flex items-center">
           <input
             type="checkbox"
@@ -114,10 +138,50 @@ const AppContent = () => {
             class="mr-2"
           />
           <label for="consistencyMode" class="text-sm text-gray-300">
-            Consistency Mode <span class="text-gray-400">(this enables the model to try and maintain consistency across images)</span>
+            Consistency Mode <span class="text-gray-400">(maintains consistency across images)</span>
           </label>
         </div>
       </header>
+
+      {/* API Key Modal */}
+      <Show when={showAPIKeyModal()}>
+        <div 
+          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleOutsideClick}
+        >
+          <div class="modal-content bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">Enter Your API Key</h2>
+            <input
+              placeholder="Enter your API key"
+              type="password"
+              value={userAPIKey()}
+              class="w-full p-2 mb-2 border border-gray-700 rounded-md bg-gray-700 text-white"
+              onInput={(e) => {
+                setUserAPIKey(e.currentTarget.value);
+                validateAPIKey(e.currentTarget.value);
+              }}
+            />
+            <Show when={apiKeyError()}>
+              <p class="text-red-400 text-sm mb-4">{apiKeyError()}</p>
+            </Show>
+            <div class="flex justify-end">
+              <button
+                onClick={handleAPIKeySubmit}
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!!apiKeyError()}
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setShowAPIKeyModal(false)}
+                class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
 
       <div class="flex-grow flex flex-col items-center justify-start">
         <h2 class="text-2xl font-semibold text-blue-300 mb-3">Enter Your Prompt</h2>
