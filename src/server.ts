@@ -7,12 +7,14 @@ import { Ratelimit } from '@upstash/ratelimit'
 
 const app = new Hono()
 
-const allowedOrigin = 'https://realtime-live-image-gen.pages.dev/'
-
-// Simplified CORS middleware
-app.use('/*', cors({
-  origin: allowedOrigin,
-  allowMethods: ['POST'],
+// Update the CORS configuration
+app.use(cors({
+  origin: ['https://realtime-live-image-gen.pages.dev', 'http://localhost:3000'],
+  allowMethods: ['POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 600,
+  credentials: true,
 }))
 
 app.post('/api/generateImages', async (c) => {
