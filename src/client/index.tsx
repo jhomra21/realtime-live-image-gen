@@ -120,8 +120,19 @@ const AppContent = () => {
   const handleAPIKeySubmit = () => {
     if (validateAPIKey(userAPIKey())) {
       setShowAPIKeyModal(false);
+      // If the API key is removed, reset the model to schnell-Free
+      if (!userAPIKey()) {
+        setModelName('black-forest-labs/FLUX.1-schnell-Free');
+      }
     }
   }
+
+  // Add a new effect to watch for changes in the userAPIKey
+  createEffect(() => {
+    if (!userAPIKey()) {
+      setModelName('black-forest-labs/FLUX.1-schnell-Free');
+    }
+  });
 
   const handleOutsideClick = (e: MouseEvent) => {
     const modalContent = (e.target as HTMLElement).closest('.modal-content');
@@ -191,6 +202,10 @@ const AppContent = () => {
               onInput={(e) => {
                 setUserAPIKey(e.currentTarget.value);
                 validateAPIKey(e.currentTarget.value);
+                // If the API key is removed, reset the model to schnell-Free
+                if (!e.currentTarget.value) {
+                  setModelName('black-forest-labs/FLUX.1-schnell-Free');
+                }
               }}
             />
             <Show when={apiKeyError()}>
