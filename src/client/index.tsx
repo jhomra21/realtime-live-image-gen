@@ -30,6 +30,7 @@ const AppContent = () => {
   const [showDebug, setShowDebug] = createSignal(false)
   const [showPremadePrompts, setShowPremadePrompts] = createSignal(false)
   const [showAPIKeyModal, setShowAPIKeyModal] = createSignal(false)
+  const [modelName, setModelName] = createSignal('Flux.Schnell') // Add this line for the model name
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -123,9 +124,21 @@ const AppContent = () => {
 
   return (
     <div class="flex min-h-screen flex-col bg-gray-900 text-gray-100 p-4 sm:p-6">
-      <header class="mb-8">
-        <h1 class="text-4xl font-bold text-blue-300 mb-6">Real-Time AI Image Generator</h1>
-        <div class="flex items-center mb-2">
+      <header class="mb-8 max-w-2xl mx-auto w-full">
+        <div class="relative overflow-hidden rounded-lg mb-10">
+          <div class="absolute inset-0 bg-blue-600 opacity-75 blur-xl"></div>
+          <div class="relative bg-gray-900 bg-opacity-80 backdrop-blur-md p-6 shadow-lg">
+            {/* Corner highlights */}
+            <div class="absolute rounded-tl-lg top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-400"></div>
+            <div class="absolute rounded-tr-lg top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-400"></div>
+            <div class="absolute rounded-bl-lg bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400"></div>
+            <div class="absolute rounded-br-lg bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-400"></div>
+            
+            <h1 class="text-4xl font-bold text-white text-center">Real-Time AI Image Generator</h1>
+          </div>
+        </div>
+        
+        <div class="flex items-center mb-2"> {/* Removed justify-center */}
           <Tooltip content="API key is optional. Enter your key for higher quality results and faster generation.">
             <button
               onClick={() => setShowAPIKeyModal(true)}
@@ -137,7 +150,7 @@ const AppContent = () => {
           <span class="ml-2 text-sm text-gray-400">(Optional)</span>
         </div>
         <p class="text-sm text-gray-400 mb-4">You can use the generator without an API key, but entering one will provide better results.</p>
-        <div class="flex items-center">
+        <div class="flex items-center"> {/* Removed justify-center */}
           <input
             type="checkbox"
             id="consistencyMode"
@@ -193,7 +206,23 @@ const AppContent = () => {
       </Show>
 
       <div class="flex-grow flex flex-col items-center justify-start">
-        <h2 class="text-2xl font-semibold text-blue-300 mb-3">Enter Your Prompt</h2>
+        <div class="flex justify-between items-center max-w-2xl w-full mb-6">
+          <h2 class="text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
+          <div class="relative">
+            <div class="absolute inset-0 bg-blue-600 opacity-50 blur-md rounded-lg"></div>
+            <div class="relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md">
+              {/* Corner highlights */}
+              <div class="absolute rounded-tl-sm top-0 left-0 w-2 h-2 border-t border-l border-blue-400"></div>
+              <div class="absolute rounded-tr-sm top-0 right-0 w-2 h-2 border-t border-r border-blue-400"></div>
+              <div class="absolute rounded-bl-sm bottom-0 left-0 w-2 h-2 border-b border-l border-blue-400"></div>
+              <div class="absolute rounded-br-sm bottom-0 right-0 w-2 h-2 border-b border-r border-blue-400"></div>
+              
+              <div class="text-sm">
+                Model: <span class="text-blue-300 font-semibold">{modelName()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <form class="w-full max-w-2xl mb-6 px-4 sm:px-0" onSubmit={(e) => e.preventDefault()}>
           <textarea
             rows={4}
@@ -252,22 +281,24 @@ const AppContent = () => {
         </Show>
       </div>
 
-      <button
-        onClick={() => setShowDebug(!showDebug())}
-        class="mt-4 text-sm text-gray-400 hover:text-gray-300"
-      >
-        {showDebug() ? 'Hide' : 'Show'} Debug Info
-      </button>
+      <div class="flex flex-col items-center mt-8">
+        <button
+          onClick={() => setShowDebug(!showDebug())}
+          class="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors shadow-md"
+        >
+          {showDebug() ? 'Hide' : 'Show'} Debug Info
+        </button>
 
-      <Show when={showDebug()}>
-        <div class="mt-4 text-sm text-gray-400">
-          <p>Current prompt: {prompt()}</p>
-          <p>Debounced prompt: {debouncedPrompt()}</p>
-          <p>Image loading: {isGeneratingNew() ? 'Yes' : 'No'}</p>
-          <p>Image available: {(lastGeneratedImage() || image.data) ? 'Yes' : 'No'}</p>
-          <p>Consistency Mode: {consistencyMode() ? 'On' : 'Off'}</p>
-        </div>
-      </Show>
+        <Show when={showDebug()}>
+          <div class="mt-4 text-sm text-gray-400 bg-gray-800 p-4 rounded-lg shadow-md max-w-2xl w-full">
+            <p><span class="font-semibold">Current prompt:</span> {prompt()}</p>
+            <p><span class="font-semibold">Debounced prompt:</span> {debouncedPrompt()}</p>
+            <p><span class="font-semibold">Image loading:</span> {isGeneratingNew() ? 'Yes' : 'No'}</p>
+            <p><span class="font-semibold">Image available:</span> {(lastGeneratedImage() || image.data) ? 'Yes' : 'No'}</p>
+            <p><span class="font-semibold">Consistency Mode:</span> {consistencyMode() ? 'On' : 'Off'}</p>
+          </div>
+        </Show>
+      </div>
     </div>
   )
 }
