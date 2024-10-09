@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
 import Together from 'together-ai'
-import { Redis } from '@upstash/redis'
+import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
 
 const app = new Hono()
@@ -10,32 +10,24 @@ const app = new Hono()
 // Simplified CORS middleware
 app.use('/*', cors())
 
-let options: ConstructorParameters<typeof Together>[0] = {}
-let ratelimit: Ratelimit | undefined
-
-// Configure Together AI client and rate limiting
-if (Bun.env.HELICONE_API_KEY) {
-  options = {
-    baseURL: "https://together.helicone.ai/v1",
-    defaultHeaders: {
-      "Helicone-Auth": `Bearer ${Bun.env.HELICONE_API_KEY}`,
-      "Helicone-Property-BYOK": "false", // This will be set to "true" when a user API key is provided
-    }
+app.post('/api/generateImages', async (c) => {
+  const options: ConstructorParameters<typeof Together>[0] = {
+    apiKey: (c.env as any).TOGETHER_API_KEY,
   }
-}
+  const redis = new Redis({
+    url: (c.env as any).UPSTASH_REDIS_REST_URL,
+    token: (c.env as any).UPSTASH_REDIS_REST_TOKEN,
+  })
 
-if (Bun.env.UPSTASH_REDIS_REST_URL) {
-  ratelimit = new Ratelimit({
-    redis: Redis.fromEnv(),
+  const ratelimit = new Ratelimit({
+    redis: redis,
     limiter: Ratelimit.fixedWindow(100, "1440 m"),
     analytics: true,
-    prefix: "juan-realtime-image-gen", // Changed to match the provided snippet
+    prefix: "juan-realtime-image-gen",
   })
-}
 
-const client = new Together(options)
+  const client = new Together(options)
 
-app.post('/api/generateImages', async (c) => {
   const schema = z.object({
     prompt: z.string(),
     userAPIKey: z.string().optional(),
@@ -73,18 +65,7 @@ app.post('/api/generateImages', async (c) => {
   } catch (error: any) {
     console.error('Error generating image:', error)
     return c.json({ error: error.toString() }, 500)
-  } finally {
-    // Reset the API key to the original value if it was changed
-    if (options.apiKey) {
-      client.apiKey = options.apiKey
-    }
   }
 })
 
-const port = 3000
-console.log(`Server is running on port ${port}`)
-
-export default {
-  port,
-  fetch: app.fetch
-}
+export default app
