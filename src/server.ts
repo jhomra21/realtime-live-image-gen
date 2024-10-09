@@ -57,8 +57,11 @@ app.post('/api/generateImages', async (c) => {
     const body = await c.req.json()
     const { prompt, userAPIKey, iterativeMode, model } = schema.parse(body)
 
+    let selectedModel = 'black-forest-labs/FLUX.1-schnell-Free'
+
     if (userAPIKey) {
       client.apiKey = userAPIKey
+      selectedModel = model // Only use the selected model if a user API key is provided
     }
 
     if (ratelimit && !userAPIKey) {
@@ -71,7 +74,7 @@ app.post('/api/generateImages', async (c) => {
 
     const response = await client.images.create({
       prompt,
-      model: model,
+      model: selectedModel,
       width: 1024,
       height: 768,
       steps: 2,
