@@ -55,6 +55,8 @@ This project is a real-time AI image generator built using SolidJS, Hono, and To
 
 3. Open your browser and navigate to `http://localhost:3000` to access the application.
 
-### Building for Production
 
-To build the application for production, run:
+
+## Warning
+
+**Never share your API keys publicly or with untrusted parties.** API keys are sensitive credentials that can be misused if exposed. Always keep them secure and private.
