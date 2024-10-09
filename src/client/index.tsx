@@ -25,7 +25,7 @@ const AppContent = () => {
   const [lastGeneratedImage, setLastGeneratedImage] = createSignal<string | null>(null)
   const [consistencyMode, setConsistencyMode] = createSignal(false)
   const [showDebug, setShowDebug] = createSignal(false)
-  const [showPremadePrompts, setShowPremadePrompts] = createSignal(false)  // Changed default to false
+  const [showPremadePrompts, setShowPremadePrompts] = createSignal(false)
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -38,12 +38,10 @@ const AppContent = () => {
     setShowPremadePrompts(false)
   }
 
-  // Increase the debounce delay to 800ms
   const debouncedSetPrompt = debounce((value: string) => {
     setDebouncedPrompt(value.trim())
   }, 400)
 
-  // Effect to update the debounced prompt
   createEffect(() => {
     debouncedSetPrompt(prompt())
   })
@@ -134,7 +132,6 @@ const AppContent = () => {
           />
         </form>
 
-        {/* Add the toggle button for premade prompts */}
         <button
           onClick={() => setShowPremadePrompts(!showPremadePrompts())}
           class="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
