@@ -29,7 +29,7 @@ This project is a real-time AI image generator built using SolidJS, Hono, and To
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/realtime-live-image-gen.git
+   git clone https://github.com/jhomra21/realtime-live-image-gen.git
    cd realtime-live-image-gen
    ```
 
