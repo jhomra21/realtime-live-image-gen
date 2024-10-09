@@ -23,6 +23,13 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[Upstash](https://upstash.com/docs/introduction)**: A serverless database for Redis and Kafka.
 - **[TanStack Query](https://tanstack.com/query/latest/docs/framework/solid/overview)**: Powerful asynchronous state management for SolidJS.
 
+## Deployment
+
+The application is deployed using **Cloudflare Workers** and **Cloudflare Pages**:
+
+- **Cloudflare Workers**: Used to handle server-side logic and API requests efficiently at the edge, providing low-latency responses.
+- **Cloudflare Pages**: Hosts the static assets of the application, ensuring fast and reliable delivery of the client-side code.
+
 ## Getting Started
 
 ### Prerequisites
