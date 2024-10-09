@@ -30,7 +30,8 @@ const AppContent = () => {
   const [showDebug, setShowDebug] = createSignal(false)
   const [showPremadePrompts, setShowPremadePrompts] = createSignal(false)
   const [showAPIKeyModal, setShowAPIKeyModal] = createSignal(false)
-  const [modelName, setModelName] = createSignal('Flux.Schnell') // Add this line for the model name
+  const [modelName, setModelName] = createSignal('black-forest-labs/FLUX.1-schnell-Free')
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = createSignal(false)
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -51,10 +52,15 @@ const AppContent = () => {
     debouncedSetPrompt(prompt())
   })
 
+  const handleModelChange = (model: string) => {
+    setModelName(model);
+    setIsModelDropdownOpen(false);
+  };
+
   const image = createQuery(() => ({
-    queryKey: ['image', debouncedPrompt(), userAPIKey(), consistencyMode()],
+    queryKey: ['image', debouncedPrompt(), userAPIKey(), consistencyMode(), modelName()],
     queryFn: async ({ queryKey }) => {
-      const [, prompt, apiKey, consistency] = queryKey;
+      const [, prompt, apiKey, consistency, model] = queryKey;
       if (!prompt) return null;
       
       setIsGeneratingNew(true)
@@ -62,7 +68,7 @@ const AppContent = () => {
         const res = await fetch(`${API_BASE_URL}/api/generateImages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, userAPIKey: apiKey, consistencyMode: consistency })
+          body: JSON.stringify({ prompt, userAPIKey: apiKey, consistencyMode: consistency, model })
         })
         if (!res.ok) {
           throw new Error(await res.text())
@@ -150,17 +156,19 @@ const AppContent = () => {
           <span class="ml-2 text-sm text-gray-400">(Optional)</span>
         </div>
         <p class="text-sm text-gray-400 mb-4">You can use the generator without an API key, but entering one will provide better results.</p>
-        <div class="flex items-center"> {/* Removed justify-center */}
-          <input
-            type="checkbox"
-            id="consistencyMode"
-            checked={consistencyMode()}
-            onChange={(e) => setConsistencyMode(e.target.checked)}
-            class="mr-2"
-          />
-          <label for="consistencyMode" class="text-sm text-gray-300">
-            Consistency Mode <span class="text-gray-400">(maintains consistency across images)</span>
-          </label>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="consistencyMode"
+              checked={consistencyMode()}
+              onChange={(e) => setConsistencyMode(e.target.checked)}
+              class="mr-2"
+            />
+            <label for="consistencyMode" class="text-sm text-gray-300">
+              Consistency Mode <span class="text-gray-400">(maintains consistency across images)</span>
+            </label>
+          </div>
         </div>
       </header>
 
@@ -206,23 +214,49 @@ const AppContent = () => {
       </Show>
 
       <div class="flex-grow flex flex-col items-center justify-start">
-        <div class="flex justify-between items-center max-w-2xl w-full mb-6">
+        <div class="flex justify-between items-center max-w-2xl w-full mb-3">
           <h2 class="text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
           <div class="relative">
-            <div class="absolute inset-0 bg-blue-600 opacity-50 blur-md rounded-lg"></div>
-            <div class="relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md">
+            <div 
+              class="relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md cursor-pointer"
+              onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen())}
+            >
+              <div class="absolute inset-0 bg-blue-600 opacity-50 blur-md rounded-lg"></div>
               {/* Corner highlights */}
               <div class="absolute rounded-tl-sm top-0 left-0 w-2 h-2 border-t border-l border-blue-400"></div>
               <div class="absolute rounded-tr-sm top-0 right-0 w-2 h-2 border-t border-r border-blue-400"></div>
               <div class="absolute rounded-bl-sm bottom-0 left-0 w-2 h-2 border-b border-l border-blue-400"></div>
               <div class="absolute rounded-br-sm bottom-0 right-0 w-2 h-2 border-b border-r border-blue-400"></div>
               
-              <div class="text-sm">
-                Model: <span class="text-blue-300 font-semibold">{modelName()}</span>
+              <div class="relative flex justify-between items-center">
+                <div class="text-sm">
+                  Model: <span class="text-blue-300 font-semibold">{modelName().split('/')[1]}</span>
+                </div>
+                <svg class="w-4 h-4 text-blue-300 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
               </div>
             </div>
+            
+            <Show when={isModelDropdownOpen()}>
+              <div class="absolute top-full right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10">
+                <div 
+                  class="p-2 hover:bg-gray-700 cursor-pointer"
+                  onClick={() => handleModelChange('black-forest-labs/FLUX.1-schnell-Free')}
+                >
+                  Flux Schnell Free
+                </div>
+                <div 
+                  class="p-2 hover:bg-gray-700 cursor-pointer"
+                  onClick={() => handleModelChange('black-forest-labs/FLUX.1-schnell')}
+                >
+                  Flux Schnell
+                </div>
+              </div>
+            </Show>
           </div>
         </div>
+        
         <form class="w-full max-w-2xl mb-6 px-4 sm:px-0" onSubmit={(e) => e.preventDefault()}>
           <textarea
             rows={4}

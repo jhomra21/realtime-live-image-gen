@@ -50,11 +50,12 @@ app.post('/api/generateImages', async (c) => {
     prompt: z.string(),
     userAPIKey: z.string().optional(),
     iterativeMode: z.boolean().optional().default(false),
+    model: z.string().optional().default('black-forest-labs/FLUX.1-schnell-Free'),
   })
 
   try {
     const body = await c.req.json()
-    const { prompt, userAPIKey, iterativeMode } = schema.parse(body)
+    const { prompt, userAPIKey, iterativeMode, model } = schema.parse(body)
 
     if (userAPIKey) {
       client.apiKey = userAPIKey
@@ -70,7 +71,7 @@ app.post('/api/generateImages', async (c) => {
 
     const response = await client.images.create({
       prompt,
-      model: "black-forest-labs/FLUX.1-schnell-Free",
+      model: model,
       width: 1024,
       height: 768,
       steps: 2,
