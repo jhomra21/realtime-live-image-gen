@@ -53,8 +53,10 @@ const AppContent = () => {
   })
 
   const handleModelChange = (model: string) => {
-    setModelName(model);
-    setIsModelDropdownOpen(false);
+    if (userAPIKey()) {
+      setModelName(model);
+      setIsModelDropdownOpen(false);
+    }
   };
 
   const image = createQuery(() => ({
@@ -218,8 +220,8 @@ const AppContent = () => {
           <h2 class="text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
           <div class="relative">
             <div 
-              class="relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md cursor-pointer"
-              onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen())}
+              class={`relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md ${userAPIKey() ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              onClick={() => userAPIKey() && setIsModelDropdownOpen(!isModelDropdownOpen())}
             >
               <div class="absolute inset-0 bg-blue-600 opacity-50 blur-md rounded-lg"></div>
               {/* Corner highlights */}
@@ -232,13 +234,15 @@ const AppContent = () => {
                 <div class="text-sm">
                   Model: <span class="text-blue-300 font-semibold">{modelName().split('/')[1]}</span>
                 </div>
-                <svg class="w-4 h-4 text-blue-300 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
+                <Show when={userAPIKey()}>
+                  <svg class="w-4 h-4 text-blue-300 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </Show>
               </div>
             </div>
             
-            <Show when={isModelDropdownOpen()}>
+            <Show when={isModelDropdownOpen() && userAPIKey()}>
               <div class="absolute top-full right-0 mt-1 bg-gray-800 rounded-lg shadow-lg z-10">
                 <div 
                   class="p-2 hover:bg-gray-700 cursor-pointer"
