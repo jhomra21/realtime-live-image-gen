@@ -1,105 +1,118 @@
 import { render } from 'solid-js/web'
 import { createSignal, createEffect, Show } from 'solid-js'
 import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-query'
+import { debounce } from '@solid-primitives/scheduled'
 
 const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:3000';
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 const AppContent = () => {
   const [prompt, setPrompt] = createSignal('')
   const [userAPIKey, setUserAPIKey] = createSignal('')
-  const [debouncedPrompt, setDebouncedPrompt] = createSignal('')
   const [error, setError] = createSignal('')
+  const [debouncedPrompt, setDebouncedPrompt] = createSignal('')
 
-  // Debounce effect (unchanged)
+  // Increase the debounce delay to 800ms
+  const debouncedSetPrompt = debounce((value: string) => {
+    setDebouncedPrompt(value.trim())
+  }, 600)
+
+  // Effect to update the debounced prompt
   createEffect(() => {
-    const currentPrompt = prompt()
-    const timer = setTimeout(() => {
-      setDebouncedPrompt(currentPrompt)
-      console.log('Debounced prompt:', currentPrompt)
-    }, 300)
-    return () => clearTimeout(timer)
+    debouncedSetPrompt(prompt())
   })
 
   const image = createQuery(() => ({
-    queryKey: ['image', debouncedPrompt()],
-    queryFn: async () => {
+    queryKey: ['image', debouncedPrompt(), userAPIKey()],
+    queryFn: async ({ queryKey }) => {
+      const [, prompt, apiKey] = queryKey;
+      if (!prompt) return null;
+      
       const res = await fetch(`${API_BASE_URL}/api/generateImages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: debouncedPrompt(), userAPIKey: userAPIKey() })
+        body: JSON.stringify({ prompt, userAPIKey: apiKey })
       })
       if (!res.ok) {
         throw new Error(await res.text())
       }
       return await res.json() as { b64_json: string; timings: { inference: number } }
     },
-    enabled: () => !!debouncedPrompt().trim(),
+    enabled: () => debouncedPrompt().length > 0,
     staleTime: Infinity,
-    retry: false,
-    placeholderData: (prev) => prev,
   }))
 
   createEffect(() => {
     if (image.error) {
       setError(image.error.message)
+    } else {
+      setError('')
     }
   })
 
-  const isDebouncing = () => prompt() !== debouncedPrompt()
-
   return (
-    <div class="container mx-auto p-4">
-      <h1 class="text-3xl font-bold mb-4">Real-Time AI Image Generator</h1>
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700">API Key (Optional)</label>
-        <input
-          type="password"
-          value={userAPIKey()}
-          onInput={(e) => setUserAPIKey(e.currentTarget.value)}
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          placeholder="Enter your Together AI API key"
-        />
-      </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700">Image Prompt</label>
-        <textarea
-          value={prompt()}
-          onInput={(e) => setPrompt(e.currentTarget.value)}
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          placeholder="Describe your image..."
-          rows="4"
-        />
-      </div>
-      <Show when={error()}>
-        <div class="text-red-500 mb-4">{error()}</div>
-      </Show>
-      
-      {/* Image container with loading and blur effects */}
-      <div class="relative w-full h-96 bg-gray-200 rounded-lg overflow-hidden">
-        <Show when={image.isLoading || isDebouncing()}>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-          </div>
-        </Show>
-        <Show when={!image.data && !image.isLoading}>
-          <div class="absolute inset-0 flex items-center justify-center text-gray-500">
-            Your image will appear here
-          </div>
-        </Show>
-        <Show when={image.data}>
-          <img
-            src={`data:image/png;base64,${image.data?.b64_json}`}
-            alt="Generated image"
-            class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
-            classList={{ 'opacity-0 blur-xl': image.isLoading || isDebouncing(), 'opacity-100 blur-0': !image.isLoading && !isDebouncing() }}
+    <div class="flex h-screen flex-col bg-gray-100 p-4">
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">AI Image Generator</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center">
+          <label class="text-sm text-gray-600 mr-2">
+            [Optional] Together API Key:
+          </label>
+          <input
+            placeholder="Enter your API key"
+            type="password"
+            value={userAPIKey()}
+            class="mt-1 sm:mt-0 p-2 border rounded-md flex-grow max-w-md"
+            onInput={(e) => setUserAPIKey(e.currentTarget.value)}
           />
+        </div>
+      </header>
+
+      <div class="flex-grow flex flex-col items-center justify-start">
+        <form class="w-full max-w-2xl mb-4" onSubmit={(e) => e.preventDefault()}>
+          <textarea
+            rows={4}
+            placeholder="Describe the image you want to generate..."
+            required
+            value={prompt()}
+            onInput={(e) => setPrompt(e.currentTarget.value)}
+            class="w-full p-2 border rounded-md resize-none"
+          />
+        </form>
+
+        <Show when={error()}>
+          <div class="text-red-500 mb-4">{error()}</div>
         </Show>
+
+        <div class="w-full max-w-2xl aspect-video bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+          <Show when={image.data}>
+            <img
+              src={`data:image/png;base64,${image.data?.b64_json}`}
+              alt="Generated image"
+              class={`w-full h-full object-contain ${
+                image.isFetching ? 'animate-pulse' : ''
+              }`}
+            />
+          </Show>
+          <Show when={image.isLoading && !image.data}>
+            <div class="animate-spin rounded-full h-16 w-16 border-4 border-gray-300 border-t-blue-600"></div>
+          </Show>
+          <Show when={!image.isLoading && !image.data}>
+            <p class="text-gray-500">Your image will appear here</p>
+          </Show>
+        </div>
       </div>
 
       {/* Debug information */}
-      <div class="mt-4">
+      <div class="mt-4 text-sm text-gray-500">
         <p>Current prompt: {prompt()}</p>
         <p>Debounced prompt: {debouncedPrompt()}</p>
         <p>Image loading: {image.isLoading ? 'Yes' : 'No'}</p>
@@ -109,12 +122,10 @@ const AppContent = () => {
   )
 }
 
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppContent />
-    </QueryClientProvider>
-  )
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AppContent />
+  </QueryClientProvider>
+)
 
 render(() => <App />, document.getElementById('root')!)
