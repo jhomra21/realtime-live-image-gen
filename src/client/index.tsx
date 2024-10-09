@@ -144,7 +144,7 @@ const AppContent = () => {
         </Show>
 
         <Show when={showPremadePrompts() && !isGeneratingNew()}>
-          <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="w-full max-w-2xl grid grid-cols-1 gap-4 mb-6">
             <For each={premadePrompts}>
               {(premadePrompt) => (
                 <button
@@ -158,7 +158,7 @@ const AppContent = () => {
           </div>
         </Show>
 
-        <div class="w-full max-w-2xl aspect-video bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center relative border-2 border-gray-700 mx-4 sm:mx-0">
+        <div class="w-full max-w-2xl aspect-video bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center relative border-2 border-gray-700 mx-4 sm:mx-0 mt-4">
           <Show when={lastGeneratedImage() || image.data}>
             <img
               src={`data:image/png;base64,${image.data?.b64_json || lastGeneratedImage()}`}
