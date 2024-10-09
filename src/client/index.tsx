@@ -109,6 +109,7 @@ const AppContent = () => {
       </header>
 
       <div class="flex-grow flex flex-col items-center justify-start">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 text-left">Prompt</h2>
         <form class="w-full max-w-2xl mb-4" onSubmit={(e) => e.preventDefault()}>
           <textarea
             rows={4}
