@@ -7,8 +7,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 
 const app = new Hono()
 
-// Update the CORS configuration
-app.use(cors({
+// Apply CORS middleware to all routes
+app.use('*', cors({
   origin: ['https://realtime-live-image-gen.pages.dev', 'http://localhost:3000'],
   allowMethods: ['POST', 'OPTIONS'],
   allowHeaders: ['Content-Type'],
@@ -18,6 +18,17 @@ app.use(cors({
 }))
 
 app.post('/api/generateImages', async (c) => {
+  // Set CORS headers manually
+  c.header('Access-Control-Allow-Origin', 'https://realtime-live-image-gen.pages.dev')
+  c.header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type')
+  c.header('Access-Control-Max-Age', '600')
+
+  // Handle OPTIONS request for CORS preflight
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204)
+  }
+
   const options: ConstructorParameters<typeof Together>[0] = {
     apiKey: (c.env as any).TOGETHER_API_KEY,
   }
