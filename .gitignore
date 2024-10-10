@@ -176,3 +176,5 @@ dist
 
 .cursorrules
 wrangler.toml
+.wrangler-cache
+.wrangler
