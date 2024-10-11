@@ -46,7 +46,7 @@ export function Auth() {
         <h1 class="text-3xl font-bold text-center text-white mb-8">
           {isSignUp() ? 'Create an Account' : 'Welcome Back'}
         </h1>
-        <form class="space-y-6" onSubmit={handleEmailAuth}>
+        {/* <form class="space-y-6" onSubmit={handleEmailAuth}>
           <div>
             <label for="email" class="block text-sm font-medium text-gray-300">
               Email address
@@ -82,14 +82,14 @@ export function Auth() {
               {loading() ? 'Processing...' : (isSignUp() ? 'Sign Up' : 'Sign In')}
             </button>
           </div>
-        </form>
+        </form> */}
         <div class="mt-6">
           <div class="relative">
             <div class="absolute inset-0 flex items-center">
               <div class="w-full border-t border-gray-600"></div>
             </div>
             <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-gray-800 text-gray-400">Or continue with</span>
+              <span class="px-2 bg-gray-800 text-gray-400"></span>
             </div>
           </div>
           <div class="mt-6">
@@ -103,7 +103,7 @@ export function Auth() {
                 <path fill="#4A90E2" d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1818182,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"/>
                 <path fill="#FBBC05" d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7301709 1.23746264,17.3349879 L5.27698177,14.2678769 Z"/>
               </svg>
-              Sign in with Google
+              {isSignUp() ? 'Sign up with Google' : 'Log in with Google'}
             </button>
           </div>
         </div>
