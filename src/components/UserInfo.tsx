@@ -115,7 +115,16 @@ export function UserInfo(props: { session: { user: any } }) {
               Edit Profile
             </button>
             <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={async () => {
+                await supabase.auth.signOut()
+                // Clear Google's auth2 session
+                const auth2 = (window as any).gapi?.auth2
+                if (auth2) {
+                  await auth2.getAuthInstance().signOut()
+                }
+                // Redirect to force a complete reload and clear any lingering state
+                window.location.href = '/'
+              }}
               class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors focus:outline-none focus:bg-gray-700"
               role="menuitem"
             >
