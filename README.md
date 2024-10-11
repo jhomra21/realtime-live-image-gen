@@ -14,6 +14,9 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Consistency Mode**: Enable consistency mode to maintain visual consistency across generated images. Uses custom seeding to achieve this.
 - **Download Functionality**: Download generated images directly from the application.
 - **Design**: Barebones simple design using Tailwind CSS.
+- **Error Handling**: User-friendly error messages for better UX.
+- **Tooltips**: Enhanced user interface with tooltips for guidance.
+- **Google Login**: Seamless authentication using Google accounts for a personalized experience.
 
 ## Technologies Used
 
@@ -22,6 +25,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[Together AI](https://docs.together.ai/docs/introduction)**: An AI platform for building and deploying AI models.
 - **[Upstash](https://upstash.com/docs/introduction)**: A serverless database for Redis and Kafka.
 - **[TanStack Query](https://tanstack.com/query/latest/docs/framework/solid/overview)**: Powerful asynchronous state management for SolidJS.
+- **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, including Google login integration.
 
 ## Deployment
 
@@ -67,10 +71,16 @@ The application is deployed using **Cloudflare Workers** and **Cloudflare Pages*
 
 3. Open your browser and navigate to `http://localhost:3000` to access the application.
 
+## Security
 
 > [!CAUTION]
 > **Never share your API keys publicly or with untrusted parties.** API keys are sensitive credentials that can be misused if exposed. 
 > Always keep them secure and private.
 
+## Tips
+
 > [!TIP]
 > Make sure to properly set .gitignore and .env if you are cloning this repo.
+
+> [!TIP]
+> Validate requests using Zod for enhanced security and data integrity.
