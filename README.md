@@ -1,4 +1,4 @@
-# Real-Time AI Image Generator
+# Real-Time FLUX Image Generator
 
 This project is a real-time AI image generator built using **SolidJS, Hono,** and **Together AI**. It allows users to input a text prompt and generate images based on that prompt using AI models. The application supports optional API key input for personalized usage and includes a **consistency mode** to maintain visual consistency across generated images.
 
