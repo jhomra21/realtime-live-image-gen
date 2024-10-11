@@ -13,5 +13,9 @@ export default defineConfig({
       ],
     },
   },
-  // Remove the server proxy configuration
+  // Add this to ensure environment variables are loaded
+  envPrefix: 'VITE_',
+  define: {
+    'process.env': process.env
+  }
 })
