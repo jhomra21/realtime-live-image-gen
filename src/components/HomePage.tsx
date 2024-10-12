@@ -8,8 +8,8 @@ const HomePage = () => {
         <div class="w-full max-w-4xl bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700 overflow-hidden">
           <div class="p-8">
             <section class="text-center mb-12">
-              <h1 class="text-5xl font-bold mb-4">AI-Powered Image Generation</h1>
-              <p class="text-xl mb-8">Create stunning visuals with the power of artificial intelligence</p>
+              <h1 class="text-5xl font-bold mb-4">Real Time Image Generation</h1>
+              <p class="text-xl mb-8">Create stunning visuals with the power of Flux AI Image models</p>
               <A
                 href="/generate"
                 class="inline-block px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors"
