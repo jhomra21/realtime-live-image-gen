@@ -6,6 +6,7 @@ import { downloadImage } from '../utils/imageUtils'
 import { Tooltip } from '../components/ui/tooltip'
 import Footer from './Footer'
 import PreviousImages from './PreviousImages'
+import { usePreviousImages, saveImage } from '../hooks/usePreviousImages'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -133,26 +134,15 @@ const GenerateImage = () => {
       }
     }
   
-    const [previousImages, setPreviousImages] = createSignal<string[]>([]);
+    const previousImages = usePreviousImages();
   
     createEffect(() => {
-      const storedImages = localStorage.getItem('previousImages');
-      if (storedImages) {
-        setPreviousImages(JSON.parse(storedImages));
+      const newImage = image.data?.b64_json || lastGeneratedImage();
+      if (newImage) {
+        saveImage(newImage);
+        previousImages.refetch();
       }
-    });
-  
-    const saveImageToLocalStorage = (imageData: string) => {
-      const updatedImages = [imageData, ...previousImages()].slice(0, 12); // Keep only the last 12 images
-      localStorage.setItem('previousImages', JSON.stringify(updatedImages));
-      setPreviousImages(updatedImages);
-    };
-  
-    createEffect(() => {
-      if (image.data?.b64_json) {
-        saveImageToLocalStorage(image.data.b64_json);
-      }
-    });
+    }, [image.data, lastGeneratedImage]);
   
     const handleSelectPreviousImage = (imageData: string) => {
       setLastGeneratedImage(imageData);
