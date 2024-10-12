@@ -13,6 +13,9 @@ export default defineConfig({
       ],
     },
   },
+  build: {
+    assetsDir: 'assets', // This is where Vite will put processed assets
+  },
   // Add this to ensure environment variables are loaded
   envPrefix: 'VITE_',
   define: {
