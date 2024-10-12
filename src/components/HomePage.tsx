@@ -42,14 +42,14 @@ const HomePage = () => {
               <div class="flex justify-center items-center space-x-12">
                 <a href="https://blackforestlabs.ai/" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
                   <img 
-                    src="https://blackforestlabs.ai/wp-content/uploads/2024/07/logo-with-text_more-1024x970.png" 
+                    src="/public/images/black-forest-labs-logo.png" 
                     alt="Black Forest Labs" 
                     class="h-12 w-auto"
                   />
                 </a>
                 <a href="https://www.together.ai" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
                   <img 
-                    src="https://static.otta.com/uploads/images/company-favicons/18336-VOkPgMJf-EVlmnSAIjHS8-fdZRre9K5xuNqE04P3rUo.png" 
+                    src="/public/images/together-ai-logo.png" 
                     alt="Together AI" 
                     class="h-12 w-auto"
                   />
