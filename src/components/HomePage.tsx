@@ -42,14 +42,14 @@ const HomePage = () => {
               <div class="flex justify-center items-center space-x-12">
                 <a href="https://blackforestlabs.ai/" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
                   <img 
-                    src="/public/black-forest-labs-logo.png" 
+                    src="/black-forest-labs-logo.png" 
                     alt="Black Forest Labs Logo"
                     class="h-12 w-auto"
                   />
                 </a>
                 <a href="https://www.together.ai" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
                   <img 
-                    src="/public/together-ai-logo.png" 
+                    src="/together-ai-logo.png" 
                     alt="Together AI Logo"
                     class="h-12 w-auto"
                   />
