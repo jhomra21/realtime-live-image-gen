@@ -17,6 +17,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Error Handling**: User-friendly error messages for better UX.
 - **Tooltips**: Enhanced user interface with tooltips for guidance.
 - **Google Login**: Seamless authentication using Google.
+- **Previous Images**: View and select previously generated images.
 
 ## Technologies Used
 
@@ -26,6 +27,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[Upstash](https://upstash.com/docs/introduction)**: A serverless database for Redis and Kafka.
 - **[TanStack Query](https://tanstack.com/query/latest/docs/framework/solid/overview)**: Powerful asynchronous state management for SolidJS.
 - **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, using Google login integration.
+- **[Tailwind CSS](https://tailwindcss.com/)**: A utility-first CSS framework for styling.
 
 ## Deployment
 
@@ -33,6 +35,14 @@ The application is deployed using **Cloudflare Workers** and **Cloudflare Pages*
 
 - **Cloudflare Workers**: Used to handle server-side logic and API requests efficiently at the edge, providing low-latency responses.
 - **Cloudflare Pages**: Hosts the static assets of the application, ensuring fast and reliable delivery of the client-side code.
+
+## Previous Images
+
+The application allows users to view and select previously generated images. This feature is implemented using local storage to save image data and a custom hook to retrieve and display the images.
+
+- **Saving Images**: When an image is generated, it is saved to the browser's local storage. The `saveImage` function in `src/hooks/usePreviousImages.ts` handles this process by storing the image data along with a unique ID and timestamp.
+  
+- **Displaying Images**: The `usePreviousImages` hook retrieves the saved images from local storage and formats them for display. The `PreviousImages` component in `src/components/PreviousImages.tsx` uses this hook to render the images in a grid layout, allowing users to view and select them.
 
 ## Getting Started
 
@@ -69,7 +79,7 @@ The application is deployed using **Cloudflare Workers** and **Cloudflare Pages*
    bun run --bun vite
    ```
 
-3. Open your browser and navigate to `http://localhost:3000` to access the application.
+3. Open your browser and navigate to `http://localhost:5173` to access the application.
 
 ## Security
 
@@ -84,3 +94,5 @@ The application is deployed using **Cloudflare Workers** and **Cloudflare Pages*
 
 > [!TIP]
 > Validate requests using Zod for enhanced security and data integrity.
+
+
