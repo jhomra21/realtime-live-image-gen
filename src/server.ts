@@ -36,6 +36,11 @@ app.post('/api/generateImages', async (c) => {
     url: (c.env as any).UPSTASH_REDIS_REST_URL,
     token: (c.env as any).UPSTASH_REDIS_REST_TOKEN,
   })
+  //---------------- use this for local testing --------------------------------
+  // const redis = new Redis({
+  //   url: process.env.UPSTASH_REDIS_REST_URL || '',
+  //   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  // })
 
   const ratelimit = new Ratelimit({
     redis: redis,
