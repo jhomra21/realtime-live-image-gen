@@ -21,6 +21,7 @@ const HomePage = () => {
 
   return (
     <div class="min-h-screen bg-gray-900 text-gray-100">
+      {/* Old Nav
       <nav class="bg-gray-800 p-4">
         <div class="container mx-auto flex justify-between items-center">
           <h1 class="text-2xl font-bold">Home</h1>
@@ -38,7 +39,7 @@ const HomePage = () => {
             )}
           </div>
         </div>
-      </nav>
+      </nav> 
 
       <Show when={showAuth()}>
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -53,7 +54,7 @@ const HomePage = () => {
           </div>
         </div>
       </Show>
-
+    */}
       <main class="container mx-auto mt-8">
         <GenerateImage />
       </main>

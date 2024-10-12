@@ -132,12 +132,11 @@ const GenerateImage = () => {
     }
   
     return (
-      <div class="flex min-h-screen flex-col bg-gray-900 text-gray-100 p-4 sm:p-6">
-        <header class="mb-8 max-w-2xl mx-auto w-full relative">
+      <div class="flex-grow flex flex-col items-center justify-start p-4 sm:p-6">
+        <div class="w-full max-w-2xl">
           <div class="relative overflow-hidden rounded-lg mb-10">
             <div class="absolute inset-0 bg-blue-600 opacity-75 blur-xl"></div>
             <div class="relative bg-gray-900 bg-opacity-80 backdrop-blur-md p-6 shadow-lg">
-              {/* Corner highlights */}
               <div class="absolute rounded-tl-lg top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-400"></div>
               <div class="absolute rounded-tr-lg top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-400"></div>
               <div class="absolute rounded-bl-lg bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400"></div>
@@ -147,7 +146,8 @@ const GenerateImage = () => {
             </div>
           </div>
           
-          <div class="flex items-center mb-2"> {/* Removed justify-center */}
+          {/* API Key button and other controls */}
+          <div class="flex items-center mb-2">
             <Tooltip content="API key is optional. Enter your key for higher quality results and faster generation.">
               <button
                 onClick={() => setShowAPIKeyModal(true)}
@@ -159,6 +159,7 @@ const GenerateImage = () => {
             <span class="ml-2 text-sm text-gray-400">(Optional)</span>
           </div>
           <p class="text-sm text-gray-400 mb-4">You can use the generator without an API key, but entering one will provide better results.</p>
+          
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center">
               <input
@@ -173,54 +174,52 @@ const GenerateImage = () => {
               </label>
             </div>
           </div>
-        </header>
   
-        {/* API Key Modal */}
-        <Show when={showAPIKeyModal()}>
-          <div 
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={handleOutsideClick}
-          >
-            <div class="modal-content bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-              <h2 class="text-xl font-semibold text-gray-100 mb-2">Enter Your API Key</h2>
-              <p class="text-sm text-gray-400 mb-4">API key is optional. Enter your Together AI API key for higher quality results and faster generation.</p>
-              <input
-                placeholder="Enter your API key (optional)"
-                type="password"
-                value={userAPIKey()}
-                class="w-full p-2 mb-2 border border-gray-700 rounded-md bg-gray-700 text-white"
-                onInput={(e) => {
-                  setUserAPIKey(e.currentTarget.value);
-                  validateAPIKey(e.currentTarget.value);
-                  // If the API key is removed, reset the model to schnell-Free
-                  if (!e.currentTarget.value) {
-                    setModelName('black-forest-labs/FLUX.1-schnell-Free');
-                  }
-                }}
-              />
-              <Show when={apiKeyError()}>
-                <p class="text-red-400 text-sm mb-4">{apiKeyError()}</p>
-              </Show>
-              <div class="flex justify-end">
-                <button
-                  onClick={handleAPIKeySubmit}
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!!apiKeyError()}
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowAPIKeyModal(false)}
-                  class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
+          {/* API Key Modal */}
+          <Show when={showAPIKeyModal()}>
+            <div 
+              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              onClick={handleOutsideClick}
+            >
+              <div class="modal-content bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+                <h2 class="text-xl font-semibold text-gray-100 mb-2">Enter Your API Key</h2>
+                <p class="text-sm text-gray-400 mb-4">API key is optional. Enter your Together AI API key for higher quality results and faster generation.</p>
+                <input
+                  placeholder="Enter your API key (optional)"
+                  type="password"
+                  value={userAPIKey()}
+                  class="w-full p-2 mb-2 border border-gray-700 rounded-md bg-gray-700 text-white"
+                  onInput={(e) => {
+                    setUserAPIKey(e.currentTarget.value);
+                    validateAPIKey(e.currentTarget.value);
+                    // If the API key is removed, reset the model to schnell-Free
+                    if (!e.currentTarget.value) {
+                      setModelName('black-forest-labs/FLUX.1-schnell-Free');
+                    }
+                  }}
+                />
+                <Show when={apiKeyError()}>
+                  <p class="text-red-400 text-sm mb-4">{apiKeyError()}</p>
+                </Show>
+                <div class="flex justify-end">
+                  <button
+                    onClick={handleAPIKeySubmit}
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!!apiKeyError()}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setShowAPIKeyModal(false)}
+                    class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </Show>
+          </Show>
   
-        <div class="flex-grow flex flex-col items-center justify-start">
           <div class="flex justify-between items-center max-w-2xl w-full mb-3">
             <h2 class="text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
             <div class="relative">
