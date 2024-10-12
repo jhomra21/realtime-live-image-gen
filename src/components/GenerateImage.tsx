@@ -5,6 +5,7 @@ import { debounce } from '@solid-primitives/scheduled'
 import { downloadImage } from '../utils/imageUtils'
 import { Tooltip } from '../components/ui/tooltip'
 import Footer from './Footer'
+import PreviousImages from './PreviousImages'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -131,6 +132,31 @@ const GenerateImage = () => {
         setShowAPIKeyModal(false);
       }
     }
+  
+    const [previousImages, setPreviousImages] = createSignal<string[]>([]);
+  
+    createEffect(() => {
+      const storedImages = localStorage.getItem('previousImages');
+      if (storedImages) {
+        setPreviousImages(JSON.parse(storedImages));
+      }
+    });
+  
+    const saveImageToLocalStorage = (imageData: string) => {
+      const updatedImages = [imageData, ...previousImages()].slice(0, 12); // Keep only the last 12 images
+      localStorage.setItem('previousImages', JSON.stringify(updatedImages));
+      setPreviousImages(updatedImages);
+    };
+  
+    createEffect(() => {
+      if (image.data?.b64_json) {
+        saveImageToLocalStorage(image.data.b64_json);
+      }
+    });
+  
+    const handleSelectPreviousImage = (imageData: string) => {
+      setLastGeneratedImage(imageData);
+    };
   
     return (
       <div class="page-transition flex flex-col min-h-screen">
@@ -285,6 +311,9 @@ const GenerateImage = () => {
                 Download Image
               </button>
             </Show>
+    
+            {/* Previous Images Component */}
+            <PreviousImages onSelectImage={handleSelectPreviousImage} />
     
             {/* Debug section */}
             <div class="flex flex-col items-center mt-8">

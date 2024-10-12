@@ -9,7 +9,7 @@ const app = new Hono()
 
 // Apply CORS middleware to all routes
 app.use('*', cors({
-  origin: ['https://realtime-live-image-gen.pages.dev', 'http://localhost:3000'],
+  origin: ['https://realtime-live-image-gen.pages.dev', 'http://localhost:5173'],
   allowMethods: ['POST', 'OPTIONS'],
   allowHeaders: ['Content-Type'],
   exposeHeaders: ['Content-Length'],
