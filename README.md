@@ -1,4 +1,4 @@
-# Real-Time AI Image Generator
+# Real-Time FLUX Image Generator
 
 This project is a real-time AI image generator built using **SolidJS, Hono,** and **Together AI**. It allows users to input a text prompt and generate images based on that prompt using AI models. The application supports optional API key input for personalized usage and includes a **consistency mode** to maintain visual consistency across generated images.
 
@@ -16,7 +16,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Design**: Barebones simple design using Tailwind CSS.
 - **Error Handling**: User-friendly error messages for better UX.
 - **Tooltips**: Enhanced user interface with tooltips for guidance.
-- **Google Login**: Seamless authentication using Google accounts for a personalized experience.
+- **Google Login**: Seamless authentication using Google.
 
 ## Technologies Used
 
@@ -25,7 +25,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[Together AI](https://docs.together.ai/docs/introduction)**: An AI platform for building and deploying AI models.
 - **[Upstash](https://upstash.com/docs/introduction)**: A serverless database for Redis and Kafka.
 - **[TanStack Query](https://tanstack.com/query/latest/docs/framework/solid/overview)**: Powerful asynchronous state management for SolidJS.
-- **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, including Google login integration.
+- **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, using Google login integration.
 
 ## Deployment
 
