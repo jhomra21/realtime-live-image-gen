@@ -3,6 +3,7 @@ import { Component, createSignal, onMount, lazy, createEffect, Show } from 'soli
 import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import { Router, Route, A, RouteSectionProps, useLocation } from '@solidjs/router'
 import HomePage from '../components/HomePage'
+import GenerateImage from '../components/GenerateImage'
 import { Auth } from '../components/Auth'
 import { supabase } from '../lib/supabase'
 import { UserInfo } from '../components/UserInfo'
@@ -11,7 +12,7 @@ import '../app.css'
 import AboutPage from '../components/AboutPage'
 import { Transition } from 'solid-transition-group';
 
-const GenerateImage = lazy(() => import("../components/GenerateImage"));
+// const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 

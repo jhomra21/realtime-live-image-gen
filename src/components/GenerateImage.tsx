@@ -7,6 +7,8 @@ import { Tooltip } from '../components/ui/tooltip'
 import Footer from './Footer'
 import PreviousImages from './PreviousImages'
 import { usePreviousImages, saveImage } from '../hooks/usePreviousImages'
+import ImageModal from './ImageModal'
+import { Button } from './ui/button'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -25,6 +27,7 @@ const GenerateImage = () => {
     const [showAPIKeyModal, setShowAPIKeyModal] = createSignal(false)
     const [modelName, setModelName] = createSignal('black-forest-labs/FLUX.1-schnell-Free')
     const [isModelDropdownOpen, setIsModelDropdownOpen] = createSignal(false)
+    const [isModalOpen, setIsModalOpen] = createSignal(false)
   
     const premadePrompts = [
       "A serene landscape with a misty mountain lake at sunrise",
@@ -148,6 +151,14 @@ const GenerateImage = () => {
       setLastGeneratedImage(imageData);
     };
   
+    const handleImageClick = () => {
+      setIsModalOpen(true);
+    }
+  
+    const handleCloseModal = () => {
+      setIsModalOpen(false);
+    };
+  
     return (
       <div class="page-transition flex flex-col min-h-screen">
         <div class="flex-grow flex flex-col items-center justify-start p-4 sm:p-6">
@@ -169,12 +180,12 @@ const GenerateImage = () => {
             <div class="mb-4">
               <div class="flex items-center mb-2">
                 <Tooltip content="API key is optional. Enter your key for higher quality results and faster generation.">
-                  <button
+                  <Button
                     onClick={() => setShowAPIKeyModal(true)}
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Enter API Key
-                  </button>
+                  </Button>
                 </Tooltip>
                 <span class="ml-2 text-sm text-gray-400">(Optional)</span>
               </div>
@@ -279,7 +290,8 @@ const GenerateImage = () => {
                   alt="Generated image"
                   class={`w-full h-full object-contain transition-all duration-300 ${
                     isGeneratingNew() ? 'blur-md' : ''
-                  }`}
+                  } cursor-pointer`}
+                  onClick={handleImageClick}
                 />
               </Show>
               <Show when={isGeneratingNew()}>
@@ -292,27 +304,25 @@ const GenerateImage = () => {
               </Show>
             </div>
     
-            {/* Download button */}
-            <Show when={!isGeneratingNew() && (lastGeneratedImage() || image.data)}>
-              <button
-                onClick={handleDownload}
-                class="w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-              >
-                Download Image
-              </button>
-            </Show>
-    
             {/* Previous Images Component */}
             <PreviousImages onSelectImage={handleSelectPreviousImage} />
     
+            {/* Image Modal for the main generated image */}
+            <ImageModal
+              imageData={image.data?.b64_json || lastGeneratedImage()}
+              isOpen={isModalOpen()}
+              onClose={handleCloseModal}
+            />
+           
+    
             {/* Debug section */}
             <div class="flex flex-col items-center mt-8">
-              <button
+              <Button
                 onClick={() => setShowDebug(!showDebug())}
                 class="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors shadow-md"
               >
                 {showDebug() ? 'Hide' : 'Show'} Debug Info
-              </button>
+              </Button>
       
               <Show when={showDebug()}>
                 <div class="mt-4 text-sm text-gray-400 bg-gray-800 p-4 rounded-lg shadow-md w-full">

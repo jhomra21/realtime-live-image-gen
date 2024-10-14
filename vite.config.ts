@@ -2,8 +2,13 @@ import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
 import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
-
+import { resolve } from 'node:path'
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./src")
+    }
+  },
   plugins: [solidPlugin()],
   css: {
     postcss: {
