@@ -11,6 +11,7 @@ import { Session } from '@supabase/supabase-js'
 import '../app.css'
 import AboutPage from '../components/AboutPage'
 import { Transition } from 'solid-transition-group';
+import Footer from '@/components/Footer'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -135,7 +136,9 @@ const App = () => (
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
     </Router>
+    <Footer />
   </QueryClientProvider>
+  
 );
 
 render(() => <App />, document.getElementById('root')!)

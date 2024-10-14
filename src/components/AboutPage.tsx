@@ -1,50 +1,48 @@
-import { A } from '@solidjs/router';
-import Footer from './Footer';
+import { Component } from 'solid-js';
 
-const AboutPage = () => {
+const AboutPage: Component = () => {
   return (
-    <div class="page-transition">
-      <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-        <div class="p-8">
-          <header class="text-center mb-12">
-            <h1 class="text-5xl font-bold mb-4">About Our Project</h1>
-            <p class="text-xl">Learn more about our AI-powered image generation technology</p>
-          </header>
+    <div class="page-transition flex flex-col min-h-fit">
+      <div class="flex-grow flex justify-center pt-8 px-4 pb-16">
+        <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-md max-w-4xl w-full border border-gray-700 overflow-hidden">
+          <div class="p-8 md:p-12">
+            <header class="text-center mb-12">
+              <h1 class="text-4xl sm:text-5xl font-bold mb-4">About Real Time Image Generation</h1>
+              <p class="text-lg sm:text-xl text-gray-300">Powered by Together AI and Black Forest Labs Flux Models</p>
+            </header>
 
-          <section class="space-y-8">
-            <div>
-              <h2 class="text-3xl font-bold mb-4 text-blue-300">Our Mission</h2>
-              <p class="text-lg text-gray-300">
-                At AI Image Generator, we're passionate about pushing the boundaries of artificial intelligence 
-                and creativity. Our mission is to provide accessible, powerful tools that empower artists, 
-                designers, and creators to bring their visions to life.
-              </p>
-            </div>
+            <section class="space-y-10">
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-blue-300">Our Technology</h2>
+                <p class="text-base sm:text-lg text-gray-300">
+                  Our AI Image Generator leverages the cutting-edge capabilities of Together AI's infrastructure 
+                  and the innovative Flux models from Black Forest Labs. This powerful combination allows us to 
+                  offer state-of-the-art image generation with exceptional quality and speed.
+                </p>
+              </div>
 
-            <div>
-              <h2 class="text-3xl font-bold mb-4 text-blue-300">The Technology</h2>
-              <p class="text-lg text-gray-300">
-                Our image generation system uses state-of-the-art machine learning models, trained on vast 
-                datasets of images and text. By understanding the relationships between words and visual 
-                elements, our AI can create unique, high-quality images based on textual descriptions.
-              </p>
-            </div>
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-blue-300">Together AI Integration</h2>
+                <p class="text-base sm:text-lg text-gray-300">
+                  Together AI provides us with a robust and scalable infrastructure for running AI models. Their 
+                  platform enables us to deploy and manage our image generation models efficiently, ensuring high 
+                  performance and reliability for our users.
+                </p>
+              </div>
 
-            <div>
-              <h2 class="text-3xl font-bold mb-4 text-blue-300">Our Team</h2>
-              <p class="text-lg text-gray-300">
-                As a solo developer, I'm passionate about leveraging cutting-edge AI technologies to push the 
-                boundaries of digital creativity. By utilizing powerful GPU provider APIs, I've created a 
-                platform that brings advanced image generation capabilities to artists and creators worldwide. 
-                I'm committed to continually refining this technology and exploring new possibilities in 
-                AI-generated art.
-              </p>
-            </div>
-          </section>
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-blue-300">Black Forest Labs Flux Models</h2>
+                <p class="text-base sm:text-lg text-gray-300">
+                  We utilize the Flux models developed by Black Forest Labs, which are at the forefront of 
+                  image generation technology. These models excel in creating high-quality, diverse images from 
+                  textual descriptions, offering our users unparalleled creative possibilities.
+                </p>
+              </div>
+
+            </section>
+          </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 };

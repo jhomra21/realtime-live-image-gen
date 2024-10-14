@@ -1,5 +1,5 @@
 import { A } from '@solidjs/router';
-import Footer from './Footer';
+
 
 const HomePage = () => {
   return (
@@ -60,7 +60,7 @@ const HomePage = () => {
         </div>
       </main>
 
-      <Footer />
+      
     </div>
   );
 };
