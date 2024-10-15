@@ -13,6 +13,16 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
+function normalizeUrl(url: string): string {
+  if (url.startsWith('https://https://')) {
+    return url.replace('https://https://', 'https://');
+  }
+  if (!url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+}
+
 const ImageModal = (props: ImageModalProps) => {
   const [isVisible, setIsVisible] = createSignal(false);
   const [isRendered, setIsRendered] = createSignal(false);
@@ -53,9 +63,10 @@ const ImageModal = (props: ImageModalProps) => {
     onSuccess: async (data) => {
       const { data: userData } = await supabase.auth.getUser();
       if (userData?.user) {
+        const normalizedUrl = normalizeUrl(data.url);
         await supabase.from('user_images').insert({
           user_id: userData.user.id,
-          image_url: data.url,
+          image_url: normalizedUrl,
         });
       }
     },

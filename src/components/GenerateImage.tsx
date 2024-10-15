@@ -315,9 +315,7 @@ const GenerateImage = () => {
         {/* Previous Images Component */}
         <PreviousImages onSelectImage={handleSelectPreviousImage} />
         {/* this component is for logged in users only. no one else should see it */}
-        <Show when={user()}>
-          <UserImages />
-        </Show>
+        <UserImages />
 
         {/* Image Modal for the main generated image */}
         <ImageModal
