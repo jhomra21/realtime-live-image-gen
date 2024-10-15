@@ -1,10 +1,8 @@
-import { render } from 'solid-js/web'
-import { createSignal, createEffect, Show, For } from 'solid-js'
-import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-query'
+import { createSignal, createEffect, Show } from 'solid-js'
+import { createQuery, createMutation } from '@tanstack/solid-query'
 import { debounce } from '@solid-primitives/scheduled'
-import { downloadImage } from '../utils/imageUtils'
 import { Tooltip } from '../components/ui/tooltip'
-
+import { UserImages } from './UserImages'
 import PreviousImages from './PreviousImages'
 import { usePreviousImages, saveImage } from '../hooks/usePreviousImages'
 import ImageModal from './ImageModal'
@@ -15,11 +13,13 @@ import {
   AccordionItem,
   AccordionTrigger
 } from "@/components/ui/accordion"
+import { useAuth } from '../hooks/useAuth'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
 
 const GenerateImage = () => {
+  const { user } = useAuth();
   const [prompt, setPrompt] = createSignal('')
   const [userAPIKey, setUserAPIKey] = createSignal('')
   const [apiKeyError, setApiKeyError] = createSignal('')
@@ -314,6 +314,10 @@ const GenerateImage = () => {
 
         {/* Previous Images Component */}
         <PreviousImages onSelectImage={handleSelectPreviousImage} />
+        {/* this component is for logged in users only. no one else should see it */}
+        <Show when={user()}>
+          <UserImages />
+        </Show>
 
         {/* Image Modal for the main generated image */}
         <ImageModal
