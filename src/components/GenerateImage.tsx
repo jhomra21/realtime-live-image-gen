@@ -172,9 +172,6 @@ const GenerateImage = () => {
     },
     onSuccess: (url) => {
       setUploadedImageUrl(url)
-      
-      // Invalidate and refetch the userImages query
-      queryClient.invalidateQueries({ queryKey: ['userImages'] })
     },
     onError: (error) => {
       console.error('Error uploading image:', error)
