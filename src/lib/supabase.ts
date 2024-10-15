@@ -15,4 +15,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-console.log('Supabase client created')
+console.log('Supabase client created with URL:', supabaseUrl)
+
+// Add a listener for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth state changed:', event, session)
+})
