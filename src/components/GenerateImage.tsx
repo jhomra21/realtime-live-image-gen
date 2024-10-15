@@ -14,6 +14,7 @@ import {
   AccordionTrigger
 } from "@/components/ui/accordion"
 import { useAuth } from '../hooks/useAuth'
+import { UserImageModal } from './UserImageModal'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -34,6 +35,8 @@ const GenerateImage = () => {
   const [modelName, setModelName] = createSignal('black-forest-labs/FLUX.1-schnell-Free')
   const [isModelDropdownOpen, setIsModelDropdownOpen] = createSignal(false)
   const [isModalOpen, setIsModalOpen] = createSignal(false)
+  const [uploadedImageUrl, setUploadedImageUrl] = createSignal<string | null>(null)
+  const [isUserImageModalOpen, setIsUserImageModalOpen] = createSignal(false)
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -138,13 +141,44 @@ const GenerateImage = () => {
 
   const previousImages = usePreviousImages();
 
+  const uploadImageMutation = createMutation(() => ({
+    mutationFn: async (imageData: string) => {
+      const response = await fetch(imageData)
+      const blob = await response.blob()
+      const formData = new FormData()
+      formData.append('image', blob, 'generated_image.png')
+
+      const uploadResponse = await fetch(`${API_BASE_URL}/api/uploadImage`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image')
+      }
+
+      const { url } = await uploadResponse.json()
+      return url
+    },
+    onSuccess: (url) => {
+      setUploadedImageUrl(url)
+      setIsUserImageModalOpen(true)
+    },
+    onError: (error) => {
+      console.error('Error uploading image:', error)
+      // Handle error (e.g., show an error message to the user)
+    },
+  }))
+
   createEffect(() => {
-    const newImage = image.data?.b64_json || lastGeneratedImage();
+    const newImage = image.data?.b64_json || lastGeneratedImage()
     if (newImage) {
-      saveImage(newImage);
-      previousImages.refetch();
+      saveImage(newImage)
+      previousImages.refetch()
+      // Trigger image upload when a new image is generated
+      // uploadImageMutation.mutate(`data:image/png;base64,${newImage}`)
     }
-  }, [image.data, lastGeneratedImage]);
+  })
 
   const handleSelectPreviousImage = (imageData: string) => {
     setLastGeneratedImage(imageData);
@@ -324,6 +358,12 @@ const GenerateImage = () => {
           onClose={handleCloseModal}
         />
 
+        {/* Add UserImageModal */}
+        <UserImageModal
+          imageUrl={uploadedImageUrl() || ''}
+          isOpen={isUserImageModalOpen()}
+          onClose={() => setIsUserImageModalOpen(false)}
+        />
 
         {/* Debug section */}
         <div class="flex flex-col items-center mt-8">
