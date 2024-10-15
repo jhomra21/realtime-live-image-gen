@@ -5,7 +5,7 @@ import { Tooltip } from '../components/ui/tooltip'
 import { UserImages } from './UserImages'
 import PreviousImages from './PreviousImages'
 import { usePreviousImages, saveImage } from '../hooks/usePreviousImages'
-import ImageModal from './ImageModal'
+import ImageModal, { normalizeUrl } from './ImageModal'
 import { Button } from './ui/button'
 import {
   Accordion,
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/accordion"
 import { useAuth } from '../hooks/useAuth'
 import { UserImageModal } from './UserImageModal'
+import { supabase } from '@/lib/supabase'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -170,7 +171,15 @@ const GenerateImage = () => {
       const { url } = await uploadResponse.json()
       return url
     },
-    onSuccess: (url) => {
+    onSuccess: async (url) => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        const normalizedUrl = normalizeUrl(url);
+        await supabase.from('user_images').insert({
+          user_id: userData.user.id,
+          image_url: normalizedUrl,
+        });
+      }
       setUploadedImageUrl(url)
     },
     onError: (error) => {

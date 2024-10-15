@@ -13,7 +13,7 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   if (url.startsWith('https://https://')) {
     return url.replace('https://https://', 'https://');
   }
@@ -69,6 +69,7 @@ const ImageModal = (props: ImageModalProps) => {
           image_url: normalizedUrl,
         });
       }
+      setIsVisible(false);
     },
   }));
 
