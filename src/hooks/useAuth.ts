@@ -35,12 +35,12 @@ export function useAuth() {
 
     // Clear all local storage
     // Remove user-related data from localStorage
-    const keysToKeep = ['storedImages'];
-    Object.keys(localStorage).forEach(key => {
-      if (!keysToKeep.includes(key)) {
-        localStorage.removeItem(key);
-      }
-    });
+    // Preserve 'previousImages' in localStorage
+    const previousImages = localStorage.getItem('previousImages');
+    localStorage.clear();
+    if (previousImages) {
+      localStorage.setItem('previousImages', previousImages);
+    }
 
     // Clear all session storage
     sessionStorage.clear();
