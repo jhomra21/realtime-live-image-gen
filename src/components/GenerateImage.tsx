@@ -143,10 +143,18 @@ const GenerateImage = () => {
 
   const uploadImageMutation = createMutation(() => ({
     mutationFn: async (imageData: string) => {
-      const response = await fetch(imageData)
-      const blob = await response.blob()
-      const formData = new FormData()
-      formData.append('image', blob, 'generated_image.png')
+      const base64Data = imageData.split(',')[1] || imageData;
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append('image', blob, 'image.png');
 
       const uploadResponse = await fetch(`${API_BASE_URL}/api/uploadImage`, {
         method: 'POST',
