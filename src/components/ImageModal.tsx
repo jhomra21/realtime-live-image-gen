@@ -4,6 +4,9 @@ import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { createMutation } from '@tanstack/solid-query';
 
+const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
+
+
 interface ImageModalProps {
   imageData: string | null;
   isOpen: boolean;
@@ -38,7 +41,7 @@ const ImageModal = (props: ImageModalProps) => {
       const formData = new FormData();
       formData.append('image', blob, 'image.png');
 
-      const uploadResponse = await fetch('http://localhost:3000/api/uploadImage', {
+      const uploadResponse = await fetch(`${API_BASE_URL}/api/uploadImage`, {
         method: 'POST',
         body: formData,
       });
