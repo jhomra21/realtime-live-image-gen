@@ -2,6 +2,7 @@ import { createSignal, createEffect, Show, onCleanup } from 'solid-js'
 import { supabase } from '../lib/supabase'
 import { z } from 'zod' // Import zod for request validation
 import { createQuery } from '@tanstack/solid-query'
+import { useAuth } from '../hooks/useAuth'
 
 // Define a schema for profile data
 const ProfileSchema = z.object({
@@ -79,6 +80,18 @@ export function UserInfo(props: { session: { user: any } }) {
     }
   }
 
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    console.log("Starting sign out process");
+    try {
+      await signOut();
+      console.log("Sign out completed");
+    } catch (error) {
+      console.error("Error during sign out:", error);
+    }
+  };
+
   return (
     <div class="relative inline-block text-left z-50" ref={dropdownRef}>
       <button
@@ -115,16 +128,7 @@ export function UserInfo(props: { session: { user: any } }) {
               Edit Profile
             </button>
             <button
-              onClick={async () => {
-                await supabase.auth.signOut()
-                // Clear Google's auth2 session
-                const auth2 = (window as any).gapi?.auth2
-                if (auth2) {
-                  await auth2.getAuthInstance().signOut()
-                }
-                // Redirect to force a complete reload and clear any lingering state
-                window.location.href = '/'
-              }}
+              onClick={handleSignOut}
               class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors focus:outline-none focus:bg-gray-700"
               role="menuitem"
             >

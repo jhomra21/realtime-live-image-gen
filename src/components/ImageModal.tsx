@@ -3,6 +3,7 @@ import { downloadImage } from '../utils/imageUtils';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { createMutation } from '@tanstack/solid-query';
+import { useAuth } from '../hooks/useAuth';
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -114,6 +115,8 @@ const ImageModal = (props: ImageModalProps) => {
     }
   });
 
+  const { user } = useAuth();
+
   return (
     <Show when={isRendered()}>
       <div 
@@ -140,13 +143,15 @@ const ImageModal = (props: ImageModalProps) => {
           >
             Download
           </Button>
-          <Button
-            onClick={handleSaveToR2}
-            class="px-6 py-2 bg-green-600 bg-opacity-80 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
-            disabled={uploadMutation.isPending}
-          >
-            {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
-          </Button>
+          <Show when={user()}>
+            <Button
+              onClick={handleSaveToR2}
+              class="px-6 py-2 bg-green-600 bg-opacity-80 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+              disabled={uploadMutation.isPending}
+            >
+              {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
+            </Button>
+          </Show>
         </div>
       </div>
     </Show>

@@ -12,6 +12,7 @@ import '../app.css'
 import AboutPage from '../components/AboutPage'
 import { Transition } from 'solid-transition-group';
 import Footer from '@/components/Footer'
+import { useAuth } from '../hooks/useAuth';
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -27,19 +28,9 @@ const queryClient = new QueryClient({
 })
 
 const Nav = () => {
-  const [session, setSession] = createSignal<Session | null>(null);
+  const { user } = useAuth();
   const [showAuth, setShowAuth] = createSignal(false);
   const [scrolled, setScrolled] = createSignal(false);
-
-  createEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session || null);
-    });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session || null);
-    });
-  });
 
   onMount(() => {
     const handleScroll = () => {
@@ -79,8 +70,8 @@ const Nav = () => {
             >
               About
             </A>
-            {session() ? (
-              <UserInfo session={session()!} />
+            {user() ? (
+              <UserInfo session={{ user: user() }} />
             ) : (
               <button
                 onClick={() => setShowAuth(true)}
