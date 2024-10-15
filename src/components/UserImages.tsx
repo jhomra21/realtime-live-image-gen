@@ -1,9 +1,10 @@
 import { createQuery } from '@tanstack/solid-query';
-import { createSignal, createEffect, onCleanup, For, Show } from 'solid-js';
+import { createSignal, For, Show, onCleanup } from 'solid-js';
 import { supabase } from '../lib/supabase';
 import { z } from 'zod';
 import { UserImageModal } from './UserImageModal';
 import { useAuth } from '../hooks/useAuth';
+import { useQueryClient } from '@tanstack/solid-query';
 
 const UserImageSchema = z.object({
   id: z.string().uuid(),
@@ -17,51 +18,48 @@ export function UserImages() {
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = createSignal<string | null>(null);
   const [isModalOpen, setIsModalOpen] = createSignal(false);
-  const [userImages, setUserImages] = createSignal<UserImage[]>([]);
-
-  const fetchUserImages = async () => {
-    const { data, error } = await supabase
-      .from('user_images')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Supabase query error:', error);
-      return [];
-    }
-
-    const parsedData = z.array(UserImageSchema).safeParse(data);
-    if (!parsedData.success) {
-      console.error('Zod parsing error:', parsedData.error);
-      return [];
-    }
-
-    return parsedData.data;
-  };
+  const queryClient = useQueryClient();
 
   const userImagesQuery = createQuery(() => ({
     queryKey: ['userImages'],
-    queryFn: fetchUserImages,
-    onSuccess: (data: UserImage[]) => setUserImages(data),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_images')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log('Raw data from Supabase:', data); // Keep this log
+
+      const parsedData = z.array(UserImageSchema).safeParse(data);
+      if (!parsedData.success) {
+        console.error('Zod parsing error:', parsedData.error);
+        throw new Error('Failed to parse data');
+      }
+
+      return parsedData.data;
+    },
   }));
 
-  createEffect(() => {
-    const subscription = supabase
-      .channel('user_images_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'user_images' }, 
-        async (payload) => {
-          console.log('Change received!', payload);
-          // Refetch the images when there's a change
-          const updatedImages = await fetchUserImages();
-          setUserImages(updatedImages);
-        }
-      )
-      .subscribe();
+  // Set up real-time subscription
+  const subscription = supabase
+    .channel('user_images_changes')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'user_images' },
+      (payload) => {
+        console.log('Change received!', payload);
+        queryClient.invalidateQueries({ queryKey: ['userImages'] });
+      }
+    )
+    .subscribe();
 
-    onCleanup(() => {
-      subscription.unsubscribe();
-    });
+  // Clean up subscription when component unmounts
+  onCleanup(() => {
+    subscription.unsubscribe();
   });
 
   const handleCloseModal = () => {
@@ -72,9 +70,9 @@ export function UserImages() {
     <div class="mt-8">
       <h2 class="text-2xl font-bold mb-4">Images stored in Cloudflare R2</h2>
       <Show when={!userImagesQuery.isLoading} fallback={<div>Loading...</div>}>
-        <Show when={userImages().length > 0} fallback={<div>No images found.</div>}>
+        <Show when={userImagesQuery.data} fallback={<div>No images found.</div>}>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <For each={userImages()}>
+            <For each={userImagesQuery.data}>
               {(image: UserImage) => (
                 <div class="relative aspect-square">
                   <img
