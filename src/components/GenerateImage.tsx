@@ -1,5 +1,5 @@
 import { createSignal, createEffect, Show } from 'solid-js'
-import { createQuery, createMutation } from '@tanstack/solid-query'
+import { createQuery, createMutation, useQueryClient } from '@tanstack/solid-query'
 import { debounce } from '@solid-primitives/scheduled'
 import { Tooltip } from '../components/ui/tooltip'
 import { UserImages } from './UserImages'
@@ -37,6 +37,8 @@ const GenerateImage = () => {
   const [isModalOpen, setIsModalOpen] = createSignal(false)
   const [uploadedImageUrl, setUploadedImageUrl] = createSignal<string | null>(null)
   const [isUserImageModalOpen, setIsUserImageModalOpen] = createSignal(false)
+
+  const queryClient = useQueryClient()
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -170,7 +172,9 @@ const GenerateImage = () => {
     },
     onSuccess: (url) => {
       setUploadedImageUrl(url)
-      setIsUserImageModalOpen(true)
+      
+      // Invalidate and refetch the userImages query
+      queryClient.invalidateQueries({ queryKey: ['userImages'] })
     },
     onError: (error) => {
       console.error('Error uploading image:', error)

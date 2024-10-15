@@ -19,7 +19,7 @@ export function UserImages() {
   const [isModalOpen, setIsModalOpen] = createSignal(false);
 
   const userImagesQuery = createQuery(() => ({
-    queryKey: ['allImages'],
+    queryKey: ['userImages'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_images')
