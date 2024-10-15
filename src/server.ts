@@ -30,17 +30,17 @@ app.post('/api/generateImages', async (c) => {
   }
 
   const options: ConstructorParameters<typeof Together>[0] = {
-    apiKey: (c.env as any).TOGETHER_API_KEY,
+    apiKey: (c.env as any).TOGETHER_API_KEY || process.env.TOGETHER_API_KEY,
   }
-  const redis = new Redis({
-    url: (c.env as any).UPSTASH_REDIS_REST_URL,
-    token: (c.env as any).UPSTASH_REDIS_REST_TOKEN,
-  })
-  //---------------- use this for local testing --------------------------------
   // const redis = new Redis({
-  //   url: process.env.UPSTASH_REDIS_REST_URL || '',
-  //   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  //   url: (c.env as any).UPSTASH_REDIS_REST_URL,
+  //   token: (c.env as any).UPSTASH_REDIS_REST_TOKEN,
   // })
+  //---------------- use this for local testing --------------------------------
+  const redis = new Redis({
+    url: (c.env as any).UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_REST_URL || '',
+    token: (c.env as any).UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  })
 
   const ratelimit = new Ratelimit({
     redis: redis,
@@ -92,6 +92,45 @@ app.post('/api/generateImages', async (c) => {
   } catch (error: any) {
     console.error('Error generating image:', error)
     return c.json({ error: error.toString() }, 500)
+  }
+})
+
+const imageSchema = z.object({
+  image: z.instanceof(File)
+});
+
+app.post('/api/uploadImage', async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const image = formData.get('image') as File | null;
+
+    if (!image) {
+      return c.json({ error: 'No image provided' }, 400);
+    }
+
+    const bucket = (c.env as any).USER_IMAGES_BUCKET || process.env.USER_IMAGES_BUCKET;
+    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN || process.env.R2_PUBLIC_DOMAIN;
+
+    if (!bucket || typeof bucket.put !== 'function') {
+      console.error('R2 bucket not properly configured:', bucket);
+      throw new Error('R2 bucket not properly configured');
+    }
+
+    // Generate a unique filename
+    const filename = `image_${Date.now()}_${image.name}`;
+
+    // Read the file content
+    const arrayBuffer = await image.arrayBuffer();
+
+    await bucket.put(filename, arrayBuffer, {
+      httpMetadata: { contentType: image.type },
+    });
+
+    const publicUrl = `https://${r2PublicDomain}/${filename}`;
+    return c.json({ url: publicUrl });
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    return c.json({ error: 'Failed to upload image', details: error instanceof Error ? error.message : String(error) }, 500);
   }
 })
 

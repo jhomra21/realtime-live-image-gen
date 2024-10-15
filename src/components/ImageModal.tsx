@@ -1,6 +1,8 @@
 import { Show, createSignal, onCleanup, createEffect } from 'solid-js';
 import { downloadImage } from '../utils/imageUtils';
 import { Button } from './ui/button';
+import { supabase } from '../lib/supabase';
+import { createMutation } from '@tanstack/solid-query';
 
 interface ImageModalProps {
   imageData: string | null;
@@ -16,6 +18,62 @@ const ImageModal = (props: ImageModalProps) => {
     e.stopPropagation();
     if (props.imageData) {
       downloadImage(props.imageData);
+    }
+  };
+  
+
+  const uploadMutation = createMutation(() => ({
+    mutationFn: async (imageData: string) => {
+      // Convert base64 to blob
+      const base64Data = imageData.split(',')[1] || imageData;
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append('image', blob, 'image.png');
+
+      const uploadResponse = await fetch('http://localhost:3000/api/uploadImage', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+      return uploadResponse.json();
+    },
+    onSuccess: async (data) => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        await supabase.from('user_images').insert({
+          user_id: userData.user.id,
+          image_url: data.url,
+        });
+      }
+    },
+  }));
+
+  const handleSaveToR2 = async (e: Event) => {
+    e.stopPropagation();
+    if (props.imageData) {
+      try {
+        await uploadMutation.mutateAsync(props.imageData);
+        console.log("Image uploaded successfully");
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        if (error instanceof Error) {
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        }
+        // You might want to show an error message to the user here
+      }
+    } else {
+      console.error("No image data available");
     }
   };
 
@@ -59,11 +117,20 @@ const ImageModal = (props: ImageModalProps) => {
             alt="Expanded image"
             class="max-w-full max-h-[80vh] object-contain mx-auto"
           />
+        </div>
+        <div class="mt-4 space-x-4">
           <Button
             onClick={handleDownload}
-            class="mt-4 px-6 py-2 bg-blue-600 bg-opacity-80 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+            class="px-6 py-2 bg-blue-600 bg-opacity-80 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
           >
             Download
+          </Button>
+          <Button
+            onClick={handleSaveToR2}
+            class="px-6 py-2 bg-green-600 bg-opacity-80 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+            disabled={uploadMutation.isPending}
+          >
+            {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
           </Button>
         </div>
       </div>

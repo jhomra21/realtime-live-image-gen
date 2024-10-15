@@ -1,9 +1,10 @@
 import { Component } from 'solid-js';
+import Footer from './Footer';
 
 const AboutPage: Component = () => {
   return (
-    <div class="page-transition flex flex-col min-h-fit">
-      <div class="flex-grow flex justify-center pt-8 px-4 pb-16">
+    <div class="flex flex-col min-h-screen">
+      <main class="flex-grow flex justify-center pt-8 px-4 pb-16">
         <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-md max-w-4xl w-full border border-gray-700 overflow-hidden">
           <div class="p-8 md:p-12">
             <header class="text-center mb-12">
@@ -38,11 +39,11 @@ const AboutPage: Component = () => {
                   textual descriptions, offering our users unparalleled creative possibilities.
                 </p>
               </div>
-
             </section>
           </div>
         </div>
-      </div>
+      </main>
+  
     </div>
   );
 };
