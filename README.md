@@ -7,6 +7,8 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 >
 >    [https://realtime-live-image-gen.pages.dev/](https://realtime-live-image-gen.pages.dev/)
 
+
+
 ## Features
 
 - **Real-Time Image Generation**: Generate images based on text prompts using AI models.
@@ -18,6 +20,8 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Tooltips**: Enhanced user interface with tooltips for guidance.
 - **Google Login**: Seamless authentication using Google.
 - **Previous Images**: View and select previously generated images.
+- **Image Upload to R2**: Added functionality to upload generated images to an R2 bucket, providing persistent storage for user-generated content.
+- **Improved Error Handling**: Enhanced error messages and handling mechanisms for better user experience and debugging.
 
 ## Technologies Used
 
@@ -28,6 +32,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[TanStack Query](https://tanstack.com/query/latest/docs/framework/solid/overview)**: Powerful asynchronous state management for SolidJS.
 - **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, using Google login integration.
 - **[Tailwind CSS](https://tailwindcss.com/)**: A utility-first CSS framework for styling.
+- **Zod Validation**: Implemented Zod for request validation, ensuring data integrity and security across the application.
 
 ## Deployment
 
