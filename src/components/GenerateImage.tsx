@@ -170,13 +170,18 @@ const GenerateImage = () => {
     },
   }))
 
+  const handleSaveToR2 = () => {
+    const imageData = image.data?.b64_json || lastGeneratedImage()
+    if (imageData) {
+      uploadImageMutation.mutate(`data:image/png;base64,${imageData}`)
+    }
+  }
+
   createEffect(() => {
     const newImage = image.data?.b64_json || lastGeneratedImage()
     if (newImage) {
       saveImage(newImage)
       previousImages.refetch()
-      // Trigger image upload when a new image is generated
-      // uploadImageMutation.mutate(`data:image/png;base64,${newImage}`)
     }
   })
 
@@ -335,6 +340,14 @@ const GenerateImage = () => {
                 } cursor-pointer`}
               onClick={handleImageClick}
             />
+            {/* Add Save to R2 button */}
+            <Button
+              onClick={handleSaveToR2}
+              class="absolute bottom-4 right-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+              disabled={uploadImageMutation.isPending}
+            >
+              {uploadImageMutation.isPending ? 'Saving...' : 'Save to R2'}
+            </Button>
           </Show>
           <Show when={isGeneratingNew()}>
             <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
