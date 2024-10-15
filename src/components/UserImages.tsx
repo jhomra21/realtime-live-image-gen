@@ -2,7 +2,7 @@ import { createQuery } from '@tanstack/solid-query';
 import { createSignal, For, Show } from 'solid-js';
 import { supabase } from '../lib/supabase';
 import { z } from 'zod';
-import ImageModal from './ImageModal';
+import { UserImageModal } from './UserImageModal';
 import { useAuth } from '../hooks/useAuth';
 
 const UserImageSchema = z.object({
@@ -75,8 +75,8 @@ export function UserImages() {
         </Show>
       </Show>
       <Show when={selectedImage() && isModalOpen()}>
-        <ImageModal
-          imageData={selectedImage()!}
+        <UserImageModal
+          imageUrl={selectedImage()!}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
         />

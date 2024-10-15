@@ -8,3 +8,4 @@ export const downloadImage = (imageData: string | undefined) => {
     document.body.removeChild(link)
   }
 }
+
