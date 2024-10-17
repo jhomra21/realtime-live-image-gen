@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../hooks/useAuth'
 import { UserImageModal } from './UserImageModal'
 import { supabase } from '@/lib/supabase'
+import TwitterAccountList from './TwitterAccountList'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -459,7 +460,9 @@ const GenerateImage = () => {
         {/* Previous Images Component */}
         <PreviousImages onSelectImage={handleSelectPreviousImage} />
         {/* this component is for logged in users only. no one else should see it */}
-        <UserImages />
+        <Show when={user()}>
+          <UserImages />
+        </Show>
 
         {/* Image Modal for the main generated image */}
         <ImageModal
@@ -475,28 +478,9 @@ const GenerateImage = () => {
           onClose={() => setIsUserImageModalOpen(false)}
         />
 
-        {/* Link Twitter Account Button */}
-        <Show when={user()}>
-          <div class="mt-4">
-            <Button
-              onClick={() => linkTwitterAccount.mutate()}
-              disabled={linkTwitterAccount.isPending}
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              {linkTwitterAccount.isPending ? 'Linking...' : 'Link Twitter Account'}
-            </Button>
-            <Show when={linkedAccounts().length > 0}>
-              <div class="mt-2">
-                <p class="text-green-400">Linked Twitter accounts:</p>
-                <ul class="list-disc list-inside">
-                  {linkedAccounts().map(account => (
-                    <li class="text-blue-300">@{account.username}</li>
-                  ))}
-                </ul>
-              </div>
-            </Show>
-          </div>
-        </Show>
+        {/* Replace the Twitter account linking section with the new component */}
+        <TwitterAccountList />
+
         {/* Debug section */}
         <div class="flex flex-col items-center mt-8">
           <Button
