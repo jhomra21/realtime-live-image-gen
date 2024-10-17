@@ -9,10 +9,18 @@ const TwitterLinkError = () => {
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
-    if (error === 'account_linked_to_other_user') {
-      setErrorMessage('This Twitter account is already linked to another user.');
-    } else {
-      setErrorMessage('An error occurred while linking your Twitter account.');
+    switch (error) {
+      case 'account_linked_to_other_user':
+        setErrorMessage('This Twitter account is already linked to another user.');
+        break;
+      case 'check_existing_link_failed':
+        setErrorMessage('An error occurred while checking for existing links. Please try again later.');
+        break;
+      case 'save_account_failed':
+        setErrorMessage('An error occurred while saving your Twitter account. Please try again later.');
+        break;
+      default:
+        setErrorMessage('An error occurred while linking your Twitter account.');
     }
   });
 

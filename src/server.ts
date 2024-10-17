@@ -197,7 +197,7 @@ app.get('/twitter/auth/callback', async (c) => {
 
     if (linkError && linkError.code !== 'PGRST116') {
       console.error('Error checking existing links:', linkError);
-      throw new Error('Error checking existing links');
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=check_existing_link_failed`);
     }
     
     if (existingLink) {
@@ -230,7 +230,7 @@ app.get('/twitter/auth/callback', async (c) => {
 
     if (error) {
       console.error('Error saving Twitter account to Supabase:', error);
-      throw new Error('Failed to save Twitter account');
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=save_account_failed`);
     }
 
     // Redirect to a success page or back to the main application
