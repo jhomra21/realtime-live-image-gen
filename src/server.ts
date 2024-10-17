@@ -211,7 +211,7 @@ app.get('/twitter/auth/callback', async (c) => {
     const { data, error } = await supabase
       .from('user_linked_accounts')
       .upsert({
-        user_id: userId,
+        user_id: validUserId,
         provider: 'twitter',
         provider_account_id: twitterUserId,
         access_token: accessToken,
@@ -263,7 +263,7 @@ app.get('/twitter/auth', async (c) => {
     return c.json({ error: 'Invalid session' }, 401);
   }
 
-  const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
+  const callbackUrl = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback?userId=${user.id}`;
 
   const requestTokenUrl = 'https://api.twitter.com/oauth/request_token';
   const authorizationUrl = 'https://api.twitter.com/oauth/authorize';
