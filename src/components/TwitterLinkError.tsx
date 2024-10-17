@@ -21,13 +21,13 @@ const TwitterLinkError = () => {
         setErrorMessage('An error occurred while saving your Twitter account. Please try again later.');
         break;
       case 'access_token_failure':
-        setErrorMessage(`Failed to obtain access token from Twitter. ${details ? `Error: ${details}` : 'Please try again later.'}`);
+        setErrorMessage(`Failed to obtain access token from Twitter. ${details || 'Please try again later.'}`);
         break;
       case 'missing_oauth_params':
         setErrorMessage('Missing OAuth parameters. Please try the linking process again.');
         break;
       default:
-        setErrorMessage('An error occurred while linking your Twitter account.');
+        setErrorMessage('An unexpected error occurred while linking your Twitter account. Please try again later.');
     }
   });
 

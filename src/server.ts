@@ -223,11 +223,11 @@ app.get('/twitter/auth/callback', async (c) => {
         url: accessTokenUrl,
         method: 'POST',
         headers: {
-          'Authorization': authorizationHeader,
+          'Authorization': 'Bearer [REDACTED]',
           'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
-      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent(errorText)}`);
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent('Twitter API returned an unexpected response. Please try again later.')}`);
     }
 
     const accessTokenData = new URLSearchParams(await accessTokenResponse.text());
