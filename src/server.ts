@@ -193,7 +193,7 @@ app.get('/twitter/auth/callback', async (c) => {
       .select('user_id')
       .eq('provider', 'twitter')
       .eq('provider_account_id', twitterUserId)
-      .single();
+      .maybeSingle();
 
     if (linkError && linkError.code !== 'PGRST116') {
       console.error('Error checking existing links:', linkError);

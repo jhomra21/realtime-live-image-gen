@@ -26,12 +26,13 @@ const TwitterAccountList = () => {
                     .select('provider, username')
                     .eq('user_id', (currentUser as any).id)
                     .eq('provider', 'twitter')
-                    .single();
-                if (error) throw error;
+                    .maybeSingle(); // Change single() to maybeSingle()
+
+                if (error && error.code !== 'PGRST116') throw error;
                 return { linked: !!data, username: data?.username || null };
             } catch (error) {
                 console.error('Error fetching Twitter link:', error);
-                throw error;
+                return { linked: false, username: null };
             }
         },
         enabled: !!user(),
@@ -53,7 +54,11 @@ const TwitterAccountList = () => {
                 .select('username')
                 .eq('user_id', (currentUser as any).id)
                 .eq('provider', 'twitter');
-            if (error) throw error;
+            
+            if (error) {
+                console.error('Error fetching linked accounts:', error);
+                return [];
+            }
             return data || [];
         },
         enabled: !!user(),

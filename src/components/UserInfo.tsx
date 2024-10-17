@@ -20,15 +20,20 @@ export function UserInfo(props: { session: { user: any } }) {
   const profileQuery = createQuery(() => ({
     queryKey: ['profile', props.session.user.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`username`)
-        .eq('id', props.session.user.id)
-        .single()
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select(`username`)
+          .eq('id', props.session.user.id)
+          .single();
 
-      if (error) throw error
+        if (error) throw error;
 
-      return ProfileSchema.parse(data)
+        return ProfileSchema.parse(data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        return { username: null };
+      }
     },
   }))
 
