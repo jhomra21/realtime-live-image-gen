@@ -4,14 +4,13 @@ import { z } from 'zod'
 import Together from 'together-ai'
 import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
-import { createHmac } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
 
 const app = new Hono()
 
 // Apply CORS middleware to all routes
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev/'],
+  origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Length'],
@@ -238,6 +237,16 @@ app.get('/twitter/auth/callback', async (c) => {
 
 // Add this new route to initiate the Twitter OAuth flow
 app.get('/twitter/auth', async (c) => {
+  // Set CORS headers
+  c.header('Access-Control-Allow-Origin', 'https://realtime-live-image-gen.pages.dev');
+  c.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle OPTIONS request for CORS preflight
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204);
+  }
+
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'Missing or invalid Authorization header' }, 401);
@@ -271,11 +280,9 @@ app.get('/twitter/auth', async (c) => {
   ].join('&');
 
   const signingKey = `${encodeURIComponent((c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET)}&`;
-  const oauthSignature = createHmac('sha1', signingKey)
-    .update(signatureBaseString)
-    .digest('base64');
+  const oauthSignature = await createHmacSignature(signingKey, signatureBaseString);
 
-  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${encodeURIComponent(oauthSignature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
+  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${oauthSignature}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
 
   try {
     const response = await fetch(requestTokenUrl, {
@@ -306,6 +313,21 @@ app.get('/twitter/auth', async (c) => {
   }
 });
 
+async function createHmacSignature(secret: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(message);
 
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  return btoa(String.fromCharCode(...new Uint8Array(signature)));
+}
 
 export default app
