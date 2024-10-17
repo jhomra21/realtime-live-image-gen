@@ -51,24 +51,24 @@ const GenerateImage = () => {
     queryKey: ['twitterLink', (user() as any)?.id],
     queryFn: async () => {
       const currentUser = user();
-      if (!currentUser) return { linked: false, username: null };
+      if (!currentUser) return { linked: false, usernames: [] };
       try {
         const { data, error } = await supabase
           .from('user_linked_accounts')
           .select('provider, username')
           .eq('user_id', (currentUser as any).id)
-          .eq('provider', 'twitter')
-          .maybeSingle();
+          .eq('provider', 'twitter');
 
         if (error) {
-          console.error('Error fetching Twitter link:', error);
-          return { linked: false, username: null };
+          console.error('Error fetching Twitter links:', error);
+          return { linked: false, usernames: [] };
         }
 
-        return { linked: !!data, username: data?.username || null };
+        const usernames = data?.map(account => account.username) || [];
+        return { linked: usernames.length > 0, usernames };
       } catch (error) {
-        console.error('Error fetching Twitter link:', error);
-        return { linked: false, username: null };
+        console.error('Error fetching Twitter links:', error);
+        return { linked: false, usernames: [] };
       }
     },
     enabled: !!user(),
@@ -82,8 +82,9 @@ const GenerateImage = () => {
 
   createEffect(() => {
     if (twitterLinkQuery.data !== undefined) {
-
       setIsTwitterLinked(twitterLinkQuery.data.linked);
+      // If you need to do something with the usernames:
+      // const usernames = twitterLinkQuery.data.usernames;
     }
   });
 
