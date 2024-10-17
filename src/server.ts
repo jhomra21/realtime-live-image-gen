@@ -4,18 +4,22 @@ import { z } from 'zod'
 import Together from 'together-ai'
 import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
+import { createHmac } from 'crypto'
+import { createClient } from '@supabase/supabase-js'
 
 const app = new Hono()
 
 // Apply CORS middleware to all routes
 app.use('*', cors({
-  origin: ['https://realtime-live-image-gen.pages.dev', 'http://localhost:5173'],
-  allowMethods: ['POST', 'OPTIONS'],
-  allowHeaders: ['Content-Type'],
+  origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev/'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Length'],
   maxAge: 600,
   credentials: true,
 }))
+
+
 
 app.post('/api/generateImages', async (c) => {
   // Set CORS headers manually
@@ -133,5 +137,175 @@ app.post('/api/uploadImage', async (c) => {
     return c.json({ error: 'Failed to upload image', details: error instanceof Error ? error.message : String(error) }, 500);
   }
 })
+
+app.get('/twitter/auth/callback', async (c) => {
+  const { oauth_token, oauth_verifier, userId } = c.req.query();
+  
+  const schema = z.object({
+    oauth_token: z.string(),
+    oauth_verifier: z.string(),
+    userId: z.string(),
+  });
+
+  const validationResult = schema.safeParse({ oauth_token, oauth_verifier, userId });
+
+  if (!validationResult.success) {
+    return c.json({ error: 'Invalid parameters', details: validationResult.error }, 400);
+  }
+
+  const { oauth_token: validOauthToken, oauth_verifier: validOauthVerifier, userId: validUserId } = validationResult.data;
+
+  const supabase = createClient(
+    (c.env as any).SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    (c.env as any).SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  )
+
+  try {
+    // Exchange the oauth_token and oauth_verifier for an access token
+    const accessTokenResponse = await fetch('https://api.twitter.com/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        oauth_token: validOauthToken,
+        oauth_verifier: validOauthVerifier,
+        oauth_consumer_key: (c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY,
+      }),
+    });
+
+    if (!accessTokenResponse.ok) {
+      throw new Error('Failed to obtain access token');
+    }
+
+    const accessTokenData = new URLSearchParams(await accessTokenResponse.text());
+    const accessToken = accessTokenData.get('oauth_token');
+    const accessTokenSecret = accessTokenData.get('oauth_token_secret');
+    const twitterUserId = accessTokenData.get('user_id');
+    const screenName = accessTokenData.get('screen_name');
+
+    if (!accessToken || !accessTokenSecret || !twitterUserId || !screenName) {
+      throw new Error('Missing required data from Twitter');
+    }
+
+    // Check if the Twitter account is already linked to any user
+    const { data: existingLink, error: linkError } = await supabase
+      .from('user_linked_accounts')
+      .select('user_id')
+      .eq('provider', 'twitter')
+      .eq('provider_account_id', twitterUserId)
+      .single();
+
+    if (linkError && linkError.code !== 'PGRST116') {
+      throw new Error('Error checking existing links');
+    }
+    
+    if (existingLink) {
+      if (existingLink.user_id === validUserId) {
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+      } else {
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+      }
+    }
+
+    // Add the Twitter account information to the Supabase table
+    const { data, error } = await supabase
+      .from('user_linked_accounts')
+      .upsert({
+        user_id: userId,
+        provider: 'twitter',
+        provider_account_id: twitterUserId,
+        access_token: accessToken,
+        refresh_token: accessTokenSecret,
+        username: screenName,
+        expires_at: null,
+      }, {
+        onConflict: 'user_id,provider'
+      });
+
+    if (error) {
+      console.error('Error saving Twitter account to Supabase:', error);
+      throw new Error('Failed to save Twitter account');
+    }
+
+    // Redirect to a success page or back to the main application
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate`);
+  } catch (error) {
+    console.error('Error linking Twitter account:', error);
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+  }
+});
+
+// Add this new route to initiate the Twitter OAuth flow
+app.get('/twitter/auth', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Missing or invalid Authorization header' }, 401);
+  }
+
+  const token = authHeader.split(' ')[1];
+  const supabase = createClient(
+    (c.env as any).SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    (c.env as any).SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    return c.json({ error: 'Invalid session' }, 401);
+  }
+
+  const callbackUrl = `${(c.env as any).NODE_ENV === 'production'
+    ? 'https://realtime-image-gen-api.jhonra121.workers.dev/'
+    : 'http://localhost:3000'}/twitter/auth/callback?userId=${user.id}`;
+
+  const requestTokenUrl = 'https://api.twitter.com/oauth/request_token';
+  const authorizationUrl = 'https://api.twitter.com/oauth/authorize';
+
+  const oauthTimestamp = Math.floor(Date.now() / 1000).toString();
+  const oauthNonce = Math.random().toString(36).substring(2);
+
+  const signatureBaseString = [
+    'POST',
+    encodeURIComponent(requestTokenUrl),
+    encodeURIComponent(`oauth_callback=${encodeURIComponent(callbackUrl)}&oauth_consumer_key=${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}&oauth_nonce=${oauthNonce}&oauth_signature_method=HMAC-SHA1&oauth_timestamp=${oauthTimestamp}&oauth_version=1.0`)
+  ].join('&');
+
+  const signingKey = `${encodeURIComponent((c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET)}&`;
+  const oauthSignature = createHmac('sha1', signingKey)
+    .update(signatureBaseString)
+    .digest('base64');
+
+  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${encodeURIComponent(oauthSignature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
+
+  try {
+    const response = await fetch(requestTokenUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: authorizationHeader,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Twitter API Error:', response.status, errorText);
+      throw new Error(`Failed to obtain request token: ${response.status} ${errorText}`);
+    }
+
+    const data = new URLSearchParams(await response.text());
+    const oauthToken = data.get('oauth_token');
+
+    if (!oauthToken) {
+      throw new Error('No oauth_token received');
+    }
+
+    const authUrl = `${authorizationUrl}?oauth_token=${oauthToken}`;
+    return c.json({ authUrl });
+  } catch (error) {
+    console.error('Error initiating Twitter auth:', error);
+    return c.json({ error: 'Failed to initiate Twitter authentication', details: error instanceof Error ? error.message : String(error) }, 500);
+  }
+});
+
+
 
 export default app

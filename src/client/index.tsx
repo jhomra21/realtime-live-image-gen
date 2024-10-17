@@ -13,6 +13,7 @@ import AboutPage from '../components/AboutPage'
 import { Transition } from 'solid-transition-group';
 import Footer from '@/components/Footer'
 import { useAuth } from '../hooks/useAuth';
+import TwitterLinkError from '../components/TwitterLinkError'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -126,10 +127,10 @@ const App = () => (
       <Route path="/about" component={AboutPage} />
       <Route path="/login" component={Auth} />
       <Route path="/signup" component={Auth} />
+      <Route path="/twitter-linked-error" component={TwitterLinkError} />
     </Router>
     <Footer />
   </QueryClientProvider>
-  
 );
 
 render(() => <App />, document.getElementById('root')!)
