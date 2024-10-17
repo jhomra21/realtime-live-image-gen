@@ -282,7 +282,7 @@ app.get('/twitter/auth', async (c) => {
   const signingKey = `${encodeURIComponent((c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET)}&`;
   const oauthSignature = await createHmacSignature(signingKey, signatureBaseString);
 
-  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${oauthSignature}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
+  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${encodeURIComponent(oauthSignature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
 
   try {
     const response = await fetch(requestTokenUrl, {
