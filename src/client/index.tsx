@@ -14,6 +14,7 @@ import { Transition } from 'solid-transition-group';
 import Footer from '@/components/Footer'
 import { useAuth } from '../hooks/useAuth';
 import TwitterLinkError from '../components/TwitterLinkError'
+import { ToastContainer } from '@/components/ui/toast'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -181,6 +182,7 @@ const App = () => (
       <Route path="/signup" component={Auth} />
       <Route path="/twitter-linked-error" component={TwitterLinkError} />
     </Router>
+    <ToastContainer />
     <Footer />
   </QueryClientProvider>
 );
