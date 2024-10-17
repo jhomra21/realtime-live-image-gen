@@ -87,13 +87,22 @@ const GenerateImage = () => {
     queryFn: async () => {
       const currentUser = user();
       if (!currentUser) return [];
-      const { data, error } = await supabase
-        .from('user_linked_accounts')
-        .select('username')
-        .eq('user_id', (currentUser as any).id)
-        .eq('provider', 'twitter');
-      if (error) throw error;
-      return data || [];
+      try {
+        const { data, error } = await supabase
+          .from('user_linked_accounts')
+          .select('username')
+          .eq('user_id', (currentUser as any).id)
+          .eq('provider', 'twitter');
+
+        if (error) {
+          console.error('Error fetching linked accounts:', error);
+          return [];
+        }
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching linked accounts:', error);
+        return [];
+      }
     },
     enabled: !!user(),
   }));
