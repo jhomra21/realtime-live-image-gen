@@ -58,7 +58,7 @@ const GenerateImage = () => {
         .eq('user_id', (currentUser as any).id)
         .eq('provider', 'twitter')
         .single();
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
       return { linked: !!data, username: data?.username || null };
     },
     enabled: !!user(),
