@@ -58,12 +58,17 @@ const GenerateImage = () => {
           .select('provider, username')
           .eq('user_id', (currentUser as any).id)
           .eq('provider', 'twitter')
-          .single();
-        if (error) throw error;
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching Twitter link:', error);
+          return { linked: false, username: null };
+        }
+
         return { linked: !!data, username: data?.username || null };
       } catch (error) {
         console.error('Error fetching Twitter link:', error);
-        throw error;
+        return { linked: false, username: null };
       }
     },
     enabled: !!user(),

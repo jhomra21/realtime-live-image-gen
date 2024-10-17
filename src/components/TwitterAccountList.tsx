@@ -28,9 +28,9 @@ const TwitterAccountList = () => {
                     .eq('provider', 'twitter')
                     .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') {
+                if (error) {
                     console.error('Error fetching Twitter link:', error);
-                    throw error;
+                    return { linked: false, username: null };
                 }
 
                 return { linked: !!data, username: data?.username || null };
