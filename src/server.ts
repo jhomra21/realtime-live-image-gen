@@ -263,9 +263,7 @@ app.get('/twitter/auth', async (c) => {
     return c.json({ error: 'Invalid session' }, 401);
   }
 
-  const callbackUrl = `${(c.env as any).NODE_ENV === 'production'
-    ? 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback'
-    : 'http://localhost:3000/twitter/auth/callback?userId=${user.id}'}`;
+  const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
 
   const requestTokenUrl = 'https://api.twitter.com/oauth/request_token';
   const authorizationUrl = 'https://api.twitter.com/oauth/authorize';
@@ -276,19 +274,20 @@ app.get('/twitter/auth', async (c) => {
   const signatureBaseString = [
     'POST',
     encodeURIComponent(requestTokenUrl),
-    encodeURIComponent(`oauth_callback=${encodeURIComponent(callbackUrl)}&oauth_consumer_key=${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}&oauth_nonce=${oauthNonce}&oauth_signature_method=HMAC-SHA1&oauth_timestamp=${oauthTimestamp}&oauth_version=1.0`)
+    encodeURIComponent(`oauth_callback=${encodeURIComponent(callbackUrl)}&oauth_consumer_key=${(c.env as any).TWITTER_CONSUMER_KEY}&oauth_nonce=${oauthNonce}&oauth_signature_method=HMAC-SHA1&oauth_timestamp=${oauthTimestamp}&oauth_version=1.0`)
   ].join('&');
 
-  const signingKey = `${encodeURIComponent((c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET)}&`;
+  const signingKey = `${encodeURIComponent((c.env as any).TWITTER_CONSUMER_SECRET)}&`;
   const oauthSignature = await createHmacSignature(signingKey, signatureBaseString);
 
-  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${encodeURIComponent(oauthSignature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
+  const authorizationHeader = `OAuth oauth_callback="${encodeURIComponent(callbackUrl)}", oauth_consumer_key="${(c.env as any).TWITTER_CONSUMER_KEY}", oauth_nonce="${oauthNonce}", oauth_signature="${encodeURIComponent(oauthSignature)}", oauth_signature_method="HMAC-SHA1", oauth_timestamp="${oauthTimestamp}", oauth_version="1.0"`;
 
   try {
     const response = await fetch(requestTokenUrl, {
       method: 'POST',
       headers: {
         Authorization: authorizationHeader,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
 
