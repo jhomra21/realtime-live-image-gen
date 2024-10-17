@@ -155,8 +155,8 @@ app.get('/twitter/auth/callback', async (c) => {
   const { oauth_token: validOauthToken, oauth_verifier: validOauthVerifier, userId: validUserId } = validationResult.data;
 
   const supabase = createClient(
-    (c.env as any).SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-    (c.env as any).SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
   )
 
   try {
@@ -254,8 +254,8 @@ app.get('/twitter/auth', async (c) => {
 
   const token = authHeader.split(' ')[1];
   const supabase = createClient(
-    (c.env as any).SUPABASE_URL || process.env.VITE_SUPABASE_URL,
-    (c.env as any).SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
   );
 
   const { data: { user }, error } = await supabase.auth.getUser(token);
