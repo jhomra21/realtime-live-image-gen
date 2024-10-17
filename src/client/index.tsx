@@ -31,14 +31,33 @@ const queryClient = new QueryClient({
 const Nav = () => {
   const { user } = useAuth();
   const [scrolled, setScrolled] = createSignal(false);
+  const [isMenuOpen, setIsMenuOpen] = createSignal(false);
 
   onMount(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    // Add click event listener to close menu when clicking outside
+    const handleOutsideClick = (event: MouseEvent) => {
+      const nav = document.querySelector('nav');
+      if (isMenuOpen() && nav && !nav.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleOutsideClick);
+    };
   });
+
+  const toggleMenu = (event: Event) => {
+    event.stopPropagation();
+    setIsMenuOpen(!isMenuOpen());
+  };
 
   return (
     <nav
@@ -55,7 +74,7 @@ const Nav = () => {
               Home
             </A>
           </div>
-          <div class="flex items-center space-x-6">
+          <div class="hidden md:flex items-center space-x-6">
             <A 
               href="/generate" 
               class="text-white hover:text-blue-300 transition-colors border-b-2 border-transparent hover:border-blue-300" 
@@ -72,6 +91,58 @@ const Nav = () => {
             </A>
             {user() ? (
               <UserInfo session={{ user: user() }} />
+            ) : (
+              <Auth />
+            )}
+          </div>
+          <div class="md:hidden">
+            <button
+              onClick={toggleMenu}
+              class="text-white hover:text-blue-300 focus:outline-none"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d={isMenuOpen() ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Mobile menu */}
+      <div
+        class={`md:hidden ${
+          isMenuOpen() ? 'block' : 'hidden'
+        } bg-gray-900 border-t border-gray-700/30`}
+      >
+        <div class="px-2 pt-2 pb-3 space-y-1">
+          <A
+            href="/generate"
+            class="block px-3 py-2 rounded-md text-base font-medium text-white hover:text-blue-300 hover:bg-gray-800"
+            activeClass="text-blue-300 bg-gray-800"
+          >
+            Generate Image
+          </A>
+          <A
+            href="/about"
+            class="block px-3 py-2 rounded-md text-base font-medium text-white hover:text-blue-300 hover:bg-gray-800"
+            activeClass="text-blue-300 bg-gray-800"
+          >
+            About
+          </A>
+          <div class="px-3 py-2">
+            {user() ? (
+              <div class="contents items-cente">
+                <UserInfo session={{ user: user() }} />
+              </div>
             ) : (
               <Auth />
             )}
