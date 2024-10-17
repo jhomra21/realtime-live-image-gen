@@ -5,6 +5,7 @@ import Together from 'together-ai'
 import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
 import { createClient } from '@supabase/supabase-js'
+import { createHmac } from 'crypto'
 
 const app = new Hono()
 
@@ -138,6 +139,7 @@ app.post('/api/uploadImage', async (c) => {
 })
 
 app.get('/twitter/auth/callback', async (c) => {
+  console.log('Entering Twitter auth callback');
   const { oauth_token, oauth_verifier, userId } = c.req.query();
   
   const schema = z.object({
@@ -149,32 +151,83 @@ app.get('/twitter/auth/callback', async (c) => {
   const validationResult = schema.safeParse({ oauth_token, oauth_verifier, userId });
 
   if (!validationResult.success) {
-    return c.json({ error: 'Invalid parameters', details: validationResult.error }, 400);
+    console.error('Validation error:', validationResult.error);
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=invalid_parameters`);
   }
 
   const { oauth_token: validOauthToken, oauth_verifier: validOauthVerifier, userId: validUserId } = validationResult.data;
+
+  if (!validOauthToken || !validOauthVerifier) {
+    console.error('Missing OAuth token or verifier:', { validOauthToken, validOauthVerifier });
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=missing_oauth_params`);
+  }
 
   const supabase = createClient(
     (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
     (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
   )
 
+  console.log('Supabase client initialized');
+
   try {
-    // Exchange the oauth_token and oauth_verifier for an access token
-    const accessTokenResponse = await fetch('https://api.twitter.com/oauth/access_token', {
+    console.log('Exchanging tokens with Twitter');
+    const accessTokenUrl = 'https://api.twitter.com/oauth/access_token';
+    const consumerKey = (c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY;
+    const consumerSecret = (c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET;
+
+    const oauthTimestamp = Math.floor(Date.now() / 1000).toString();
+    const oauthNonce = Math.random().toString(36).substring(2);
+
+    const parameters = {
+      oauth_consumer_key: consumerKey,
+      oauth_token: validOauthToken,
+      oauth_verifier: validOauthVerifier,
+      oauth_nonce: oauthNonce,
+      oauth_timestamp: oauthTimestamp,
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_version: '1.0'
+    };
+
+    const signatureBaseString = [
+      'POST',
+      encodeURIComponent(accessTokenUrl),
+      encodeURIComponent(Object.entries(parameters)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&'))
+    ].join('&');
+
+    const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(validOauthToken)}`;
+    const oauthSignature = createHmac('sha1', signingKey).update(signatureBaseString).digest('base64');
+
+    const authorizationHeader = 'OAuth ' + Object.entries({
+      ...parameters,
+      oauth_signature: oauthSignature
+    })
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${encodeURIComponent(key)}="${encodeURIComponent(value)}"`)
+      .join(', ');
+
+    const accessTokenResponse = await fetch(accessTokenUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        oauth_token: validOauthToken,
-        oauth_verifier: validOauthVerifier,
-        oauth_consumer_key: (c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY,
-      }),
+        'Authorization': authorizationHeader,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
 
     if (!accessTokenResponse.ok) {
-      throw new Error('Failed to obtain access token');
+      const errorText = await accessTokenResponse.text();
+      console.error('Failed to obtain access token:', accessTokenResponse.status, errorText);
+      console.error('Request details:', {
+        url: accessTokenUrl,
+        method: 'POST',
+        headers: {
+          'Authorization': authorizationHeader,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent(errorText)}`);
     }
 
     const accessTokenData = new URLSearchParams(await accessTokenResponse.text());
@@ -184,10 +237,11 @@ app.get('/twitter/auth/callback', async (c) => {
     const screenName = accessTokenData.get('screen_name');
 
     if (!accessToken || !accessTokenSecret || !twitterUserId || !screenName) {
-      throw new Error('Missing required data from Twitter');
+      console.error('Missing required data from Twitter');
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=missing_twitter_data`);
     }
 
-    // Check if the Twitter account is already linked to any user
+    console.log('Checking for existing link');
     const { data: existingLink, error: linkError } = await supabase
       .from('user_linked_accounts')
       .select('user_id')
@@ -195,7 +249,7 @@ app.get('/twitter/auth/callback', async (c) => {
       .eq('provider_account_id', twitterUserId)
       .maybeSingle();
 
-    if (linkError && linkError.code !== 'PGRST116') {
+    if (linkError) {
       console.error('Error checking existing links:', linkError);
       return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=check_existing_link_failed`);
     }
@@ -213,18 +267,21 @@ app.get('/twitter/auth/callback', async (c) => {
 
     console.log('No existing link found, proceeding with linking');
 
-    // Add the Twitter account information to the Supabase table
+    const linkData = {
+      user_id: validUserId,
+      provider: 'twitter',
+      provider_account_id: twitterUserId,
+      access_token: accessToken,
+      refresh_token: accessTokenSecret,
+      username: screenName,
+      expires_at: null,
+    };
+
+    console.log('Inserting link data:', linkData);
+
     const { data, error } = await supabase
       .from('user_linked_accounts')
-      .upsert({
-        user_id: validUserId,
-        provider: 'twitter',
-        provider_account_id: twitterUserId,
-        access_token: accessToken,
-        refresh_token: accessTokenSecret,
-        username: screenName,
-        expires_at: null,
-      }, {
+      .upsert(linkData, {
         onConflict: 'user_id,provider'
       });
 
@@ -233,11 +290,11 @@ app.get('/twitter/auth/callback', async (c) => {
       return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=save_account_failed`);
     }
 
-    // Redirect to a success page or back to the main application
-    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate`);
+    console.log('Twitter account linked successfully');
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate?message=link_success`);
   } catch (error) {
-    console.error('Error linking Twitter account:', error);
-    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+    console.error('Unexpected error linking Twitter account:', error);
+    return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=unexpected_error`);
   }
 });
 
@@ -318,9 +375,9 @@ app.get('/twitter/auth', async (c) => {
   }
 });
 
-async function createHmacSignature(secret: string, message: string): Promise<string> {
+async function createHmacSignature(key: string, message: string): Promise<string> {
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
+  const keyData = encoder.encode(key);
   const messageData = encoder.encode(message);
 
   const cryptoKey = await crypto.subtle.importKey(

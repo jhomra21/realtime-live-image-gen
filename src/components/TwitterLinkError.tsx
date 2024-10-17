@@ -9,6 +9,7 @@ const TwitterLinkError = () => {
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
+    const details = urlParams.get('details');
     switch (error) {
       case 'account_linked_to_other_user':
         setErrorMessage('This Twitter account is already linked to another user.');
@@ -18,6 +19,12 @@ const TwitterLinkError = () => {
         break;
       case 'save_account_failed':
         setErrorMessage('An error occurred while saving your Twitter account. Please try again later.');
+        break;
+      case 'access_token_failure':
+        setErrorMessage(`Failed to obtain access token from Twitter. ${details ? `Error: ${details}` : 'Please try again later.'}`);
+        break;
+      case 'missing_oauth_params':
+        setErrorMessage('Missing OAuth parameters. Please try the linking process again.');
         break;
       default:
         setErrorMessage('An error occurred while linking your Twitter account.');
