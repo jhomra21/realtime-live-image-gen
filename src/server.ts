@@ -175,43 +175,16 @@ app.get('/twitter/auth/callback', async (c) => {
     const consumerKey = (c.env as any).TWITTER_CONSUMER_KEY || process.env.TWITTER_CONSUMER_KEY;
     const consumerSecret = (c.env as any).TWITTER_CONSUMER_SECRET || process.env.TWITTER_CONSUMER_SECRET;
 
-    const oauthTimestamp = Math.floor(Date.now() / 1000).toString();
-    const oauthNonce = Math.random().toString(36).substring(2);
-
-    const parameters = {
+    // Use the oauth_token and oauth_verifier from the callback
+    const params = new URLSearchParams({
       oauth_consumer_key: consumerKey,
       oauth_token: validOauthToken,
-      oauth_verifier: validOauthVerifier,
-      oauth_nonce: oauthNonce,
-      oauth_timestamp: oauthTimestamp,
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_version: '1.0'
-    };
+      oauth_verifier: validOauthVerifier
+    });
 
-    const signatureBaseString = [
-      'POST',
-      encodeURIComponent(accessTokenUrl),
-      encodeURIComponent(Object.entries(parameters)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-        .join('&'))
-    ].join('&');
-
-    const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(validOauthToken)}`;
-    const oauthSignature = createHmac('sha1', signingKey).update(signatureBaseString).digest('base64');
-
-    const authorizationHeader = 'OAuth ' + Object.entries({
-      ...parameters,
-      oauth_signature: oauthSignature
-    })
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${encodeURIComponent(key)}="${encodeURIComponent(value)}"`)
-      .join(', ');
-
-    const accessTokenResponse = await fetch(accessTokenUrl, {
+    const accessTokenResponse = await fetch(`${accessTokenUrl}?${params}`, {
       method: 'POST',
       headers: {
-        'Authorization': authorizationHeader,
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
@@ -219,15 +192,7 @@ app.get('/twitter/auth/callback', async (c) => {
     if (!accessTokenResponse.ok) {
       const errorText = await accessTokenResponse.text();
       console.error('Failed to obtain access token:', accessTokenResponse.status, errorText);
-      console.error('Request details:', {
-        url: accessTokenUrl,
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer [REDACTED]',
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
-      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent('Twitter API returned an unexpected response. Please try again later.')}`);
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent('Failed to obtain access token from Twitter. Please try again later.')}`);
     }
 
     const accessTokenData = new URLSearchParams(await accessTokenResponse.text());
