@@ -264,8 +264,8 @@ app.get('/twitter/auth', async (c) => {
   }
 
   const callbackUrl = `${(c.env as any).NODE_ENV === 'production'
-    ? 'https://realtime-image-gen-api.jhonra121.workers.dev/'
-    : 'http://localhost:3000'}/twitter/auth/callback?userId=${user.id}`;
+    ? 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback?userId=${user.id}'
+    : 'http://localhost:3000/twitter/auth/callback?userId=${user.id}'}`;
 
   const requestTokenUrl = 'https://api.twitter.com/oauth/request_token';
   const authorizationUrl = 'https://api.twitter.com/oauth/authorize';
