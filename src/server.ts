@@ -171,6 +171,8 @@ app.get('/twitter/auth/callback', async (c) => {
     const tokenUrl = 'https://api.twitter.com/2/oauth2/token';
     const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
     const clientSecret = (c.env as any).TWITTER_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET;
+    // change this to your local url when testing
+    // const redirectUri = 'http://localhost:3000/twitter/auth/callback';
     const redirectUri = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback`;
 
     const params = new URLSearchParams({
@@ -193,21 +195,13 @@ app.get('/twitter/auth/callback', async (c) => {
     if (!accessTokenResponse.ok) {
       const errorText = await accessTokenResponse.text();
       console.error('Failed to obtain access token:', accessTokenResponse.status, errorText);
-      console.error('Request details:', {
-        url: tokenUrl,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic <redacted>'
-        },
-        body: params.toString()
-      });
       return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=access_token_failure&details=${encodeURIComponent('Failed to obtain access token from Twitter. Please check server logs for more details.')}`);
     }
 
     const tokenData = await accessTokenResponse.json();
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in;
 
     // Fetch user details
     const userResponse = await fetch('https://api.twitter.com/2/users/me', {
@@ -224,9 +218,60 @@ app.get('/twitter/auth/callback', async (c) => {
     const userData = await userResponse.json();
     const twitterUserId = userData.data.id;
     const screenName = userData.data.username;
+    const name = userData.data.name;
 
-    // Check for existing link and save to database
-    // (This part remains largely the same as your original code)
+    // Check for existing link
+    const { data: existingLinks, error: linkError } = await supabase
+      .from('user_linked_accounts')
+      .select('*')
+      .eq('user_id', validUserId)
+      .eq('provider', 'twitter')
+      .eq('provider_account_id', twitterUserId);
+
+    if (linkError) {
+      console.error('Error checking for existing link:', linkError);
+      return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=database_error`);
+    }
+
+    const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+    if (existingLinks && existingLinks.length > 0) {
+      // Update the existing link
+      const { error: updateError } = await supabase
+        .from('user_linked_accounts')
+        .update({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          username: screenName,
+          name: name,
+        })
+        .eq('id', existingLinks[0].id);
+
+      if (updateError) {
+        console.error('Error updating existing link:', updateError);
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=database_error`);
+      }
+    } else {
+      // Insert new link
+      const { error: insertError } = await supabase
+        .from('user_linked_accounts')
+        .insert({
+          user_id: validUserId,
+          provider: 'twitter',
+          provider_account_id: twitterUserId,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          username: screenName,
+          name: name,
+        });
+
+      if (insertError) {
+        console.error('Error inserting new link:', insertError);
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=database_error`);
+      }
+    }
 
     console.log('Twitter account linked successfully');
     return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate?message=link_success`);
@@ -264,7 +309,9 @@ app.get('/twitter/auth', async (c) => {
     return c.json({ error: 'Invalid session' }, 401);
   }
 
-  const callbackUrl = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback`;
+  // change this to your local url when testing
+  // const callbackUrl = 'http://localhost:3000/twitter/auth/callback';
+  const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
   const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
   const authorizationUrl = 'https://twitter.com/i/oauth2/authorize';
 
