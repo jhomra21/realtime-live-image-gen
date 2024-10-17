@@ -97,18 +97,13 @@ export function UserImages() {
       </Show>
       <Show when={selectedImage() && isModalOpen()}>
         <UserImageModal
+          
           imageUrl={selectedImage()!}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
         />
       </Show>
-      <Show when={selectedImageUrl()}>
-        <ImageModal
-          imageData={selectedImageUrl()}
-          isOpen={!!selectedImageUrl()}
-          onClose={() => setSelectedImageUrl(null)}
-        />
-      </Show>
+
     </div>
   );
 }

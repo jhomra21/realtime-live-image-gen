@@ -4,8 +4,6 @@ import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { createMutation, createQuery } from '@tanstack/solid-query';
 import { useAuth } from '../hooks/useAuth';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Input } from './ui/input';
 import { User } from '@supabase/supabase-js';
 
 // Add this interface definition
@@ -36,8 +34,6 @@ export function normalizeUrl(url: string): string {
 const ImageModal = (props: ImageModalProps) => {
   const [isVisible, setIsVisible] = createSignal(false);
   const [isRendered, setIsRendered] = createSignal(false);
-  const [selectedAccount, setSelectedAccount] = createSignal<LinkedAccount | null>(null);
-  const [tweetText, setTweetText] = createSignal('');
   const { user } = useAuth();
 
   const handleDownload = (e: Event) => {
@@ -140,38 +136,7 @@ const ImageModal = (props: ImageModalProps) => {
     },
   }));
 
-  const handlePostTweet = async (e: Event) => {
-    e.stopPropagation();
-    const currentUser = user();
-    if (!currentUser || !selectedAccount() || !props.imageData) return;
-    
-    try {
-      // First, upload the image to R2
-      const uploadResult = await uploadMutation.mutateAsync(props.imageData);
-      const imageUrl = normalizeUrl(uploadResult.url);
-
-      // Debug: Log the selected account value
-      console.log('Selected account:', selectedAccount());
-
-      // Ensure we're using the correct ID from the selected account
-      const selectedAccountData = selectedAccount() as LinkedAccount;
-      if (!selectedAccountData || !selectedAccountData.twitter_account_id) {
-        console.error('Invalid Twitter account:', selectedAccountData);
-        throw new Error('Invalid Twitter account selected');
-      }
-
-      // Then post the tweet with the R2 image URL
-      await postTweetMutation.mutateAsync({
-        userId: String((currentUser as User).id),
-        twitterAccountId: selectedAccountData.twitter_account_id,
-        imageUrl,
-        tweetText: tweetText(),
-      });
-    } catch (error) {
-      console.error('Error in tweet posting process:', error);
-      alert('An error occurred while posting the tweet. Please try again.');
-    }
-  };
+  
 
   const handleOutsideClick = (e: MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -231,48 +196,6 @@ const ImageModal = (props: ImageModalProps) => {
               </Button>
             </Show>
           </div>
-          
-          <Show when={user() && linkedAccountsQuery.data?.length}>
-            <div class="space-y-2">
-              <Select
-                options={linkedAccountsQuery.data || []}
-                onChange={(value) => {
-                  console.log('Selected value:', value); // Debug: Log the selected value
-                  setSelectedAccount(value as LinkedAccount | null);
-                }}
-                itemComponent={(props) => (
-                  <SelectItem item={props.item}>@{props.item.rawValue.username}</SelectItem>
-                )}
-                optionValue="id"
-                optionTextValue="username"
-              >
-                <SelectTrigger>
-                  <SelectValue<LinkedAccount>>
-                    {(state) => {
-                      const selected = state.selectedOption();
-                      return selected ? `@${selected.username}` : "Select Twitter account";
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent />
-              </Select>
-              <Input
-                type="text"
-                placeholder="Tweet text"
-                value={tweetText()}
-                onInput={(e) => setTweetText(e.currentTarget.value)}
-                class="w-full"
-                maxLength={280}
-              />
-              <Button
-                onClick={handlePostTweet}
-                disabled={!selectedAccount() || postTweetMutation.isPending}
-                class="w-full px-6 py-2 bg-blue-500 bg-opacity-80 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
-              >
-                {postTweetMutation.isPending ? 'Posting...' : 'Post to Twitter'}
-              </Button>
-            </div>
-          </Show>
         </div>
       </div>
     </Show>

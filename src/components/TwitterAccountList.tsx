@@ -10,69 +10,35 @@ const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhon
 
 const TwitterAccountList = () => {
     const { user } = useAuth();
-    const [isTwitterLinked, setIsTwitterLinked] = createSignal(false);
-    const [linkedAccounts, setLinkedAccounts] = createSignal<Array<{ username: string }>>([]);
-
     const queryClient = useQueryClient();
 
-    const twitterLinkQuery = createQuery(() => ({
-        queryKey: ['twitterLink', (user() as any)?.id],
-        queryFn: async () => {
-            const currentUser = user();
-            if (!currentUser) return { linked: false, username: null };
-            try {
-                const { data, error } = await supabase
-                    .from('user_linked_accounts')
-                    .select('provider, username')
-                    .eq('user_id', (currentUser as any).id)
-                    .eq('provider', 'twitter')
-                    
-
-                if (error) {
-                    console.error('Error fetching Twitter link:', error);
-                    return { linked: false, username: null };
-                }
-
-                return { linked: !!data, username: data[0]?.username || null };
-            } catch (error) {
-                console.error('Error fetching Twitter link:', error);
-                return { linked: false, username: null };
-            }
-        },
-        enabled: !!user(),
-    }));
-
-    createEffect(() => {
-        if (twitterLinkQuery.data !== undefined) {
-            setIsTwitterLinked(twitterLinkQuery.data.linked);
-        }
-    });
-
-    const twitterLinkedAccountsQuery = createQuery(() => ({
-        queryKey: ['twitterLinkedAccounts', (user() as any)?.id],
+    const twitterAccountsQuery = createQuery(() => ({
+        queryKey: ['twitterAccounts', (user() as any)?.id],
         queryFn: async () => {
             const currentUser = user();
             if (!currentUser) return [];
-            const { data, error } = await supabase
-                .from('user_linked_accounts')
-                .select('username')
-                .eq('user_id', (currentUser as any).id)
-                .eq('provider', 'twitter');
-            
-            if (error) {
-                console.error('Error fetching linked accounts:', error);
+            try {
+                const { data, error } = await supabase
+                    .from('user_linked_accounts')
+                    .select('username')
+                    .eq('user_id', (currentUser as any).id)
+                    .eq('provider', 'twitter');
+
+                if (error) {
+                    console.error('Error fetching Twitter accounts:', error);
+                    return [];
+                }
+
+                return data || [];
+            } catch (error) {
+                console.error('Error fetching Twitter accounts:', error);
                 return [];
             }
-            return data || [];
         },
         enabled: !!user(),
     }));
 
-    createEffect(() => {
-        if (twitterLinkedAccountsQuery.data) {
-            setLinkedAccounts(twitterLinkedAccountsQuery.data);
-        }
-    });
+    const isTwitterLinked = () => twitterAccountsQuery.data && twitterAccountsQuery.data.length > 0;
 
     const linkTwitterAccount = createMutation(() => ({
         mutationFn: async () => {
@@ -110,10 +76,10 @@ const TwitterAccountList = () => {
                     >
                         {linkTwitterAccount.isPending ? 'Linking...' : 'Link Twitter Account'}
                     </Button>
-                    <Show when={linkedAccounts().length > 0}>
+                    <Show when={isTwitterLinked()}>
                         <div class="mt-2 flex items-center flex-wrap gap-2">
                             <p class="text-blue-100">Linked Twitter accounts</p>
-                            {linkedAccounts().map(account => (
+                            {twitterAccountsQuery.data?.map(account => (
                                 <Badge variant="outline" class="bg-blue-900 text-white border-blue-700 p-2">
                                     @{account.username}
                                 </Badge>
