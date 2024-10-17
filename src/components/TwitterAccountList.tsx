@@ -153,17 +153,26 @@ const TwitterAccountList = () => {
                 open={isDialogOpen()} 
                 onOpenChange={handleDialogClose}
             >
-                <DialogContent>
+                <DialogContent class="bg-gray-800 text-white border border-gray-700">
                     <DialogHeader>
-                        <DialogTitle>Remove Twitter Account</DialogTitle>
+                        <DialogTitle class="text-xl font-bold text-white-100">Remove Twitter Account</DialogTitle>
+                        <div class="border-b border-gray-700 w-full my-4"></div>
                     </DialogHeader>
-                    <p>Are you sure you want to remove @{clickedAccount()}?</p>
-                    <div class="flex justify-end gap-2 mt-4">
-                        <Button variant="outline" onClick={handleDialogClose}>Cancel</Button>
+                    <p class="text-gray-300">Are you sure you want to remove @{clickedAccount()}?</p>
+                    
+                    <div class="flex justify-end gap-2 mt-6">
+                        <Button 
+                            variant="outline" 
+                            onClick={handleDialogClose}
+                            class="bg-transparent text-gray-300 border-gray-600 hover:bg-gray-200"
+                        >
+                            Cancel
+                        </Button>
                         <Button 
                             variant="destructive" 
                             onClick={() => handleRemoveAccount(clickedAccount())}
                             disabled={removeTwitterAccount.isPending}
+                            class="bg-red-600 text-white hover:bg-red-700"
                         >
                             {removeTwitterAccount.isPending ? 'Removing...' : 
                              isConfirmed() ? 'Remove' : "I'm sure"}
