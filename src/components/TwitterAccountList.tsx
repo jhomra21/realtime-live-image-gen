@@ -20,14 +20,19 @@ const TwitterAccountList = () => {
         queryFn: async () => {
             const currentUser = user();
             if (!currentUser) return { linked: false, username: null };
-            const { data, error } = await supabase
-                .from('user_linked_accounts')
-                .select('provider, username')
-                .eq('user_id', (currentUser as any).id)
-                .eq('provider', 'twitter')
-                .single();
-            if (error) throw error;
-            return { linked: !!data, username: data?.username || null };
+            try {
+                const { data, error } = await supabase
+                    .from('user_linked_accounts')
+                    .select('provider, username')
+                    .eq('user_id', (currentUser as any).id)
+                    .eq('provider', 'twitter')
+                    .single();
+                if (error) throw error;
+                return { linked: !!data, username: data?.username || null };
+            } catch (error) {
+                console.error('Error fetching Twitter link:', error);
+                throw error;
+            }
         },
         enabled: !!user(),
     }));
