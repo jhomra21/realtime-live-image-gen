@@ -1,12 +1,21 @@
-import { Show, createSignal, onCleanup, createEffect } from 'solid-js';
+import { Show, createSignal, createEffect, For } from 'solid-js';
 import { downloadImage } from '../utils/imageUtils';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
-import { createMutation } from '@tanstack/solid-query';
+import { createMutation, createQuery } from '@tanstack/solid-query';
 import { useAuth } from '../hooks/useAuth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Input } from './ui/input';
+import { User } from '@supabase/supabase-js';
 
-const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
+// Add this interface definition
+interface LinkedAccount {
+  id: string;  // This is likely the Supabase ID
+  username: string;
+  twitter_account_id: string;  // Add this field for the actual Twitter account ID
+}
 
+  const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
 interface ImageModalProps {
   imageData: string | null;
@@ -27,6 +36,9 @@ export function normalizeUrl(url: string): string {
 const ImageModal = (props: ImageModalProps) => {
   const [isVisible, setIsVisible] = createSignal(false);
   const [isRendered, setIsRendered] = createSignal(false);
+  const [selectedAccount, setSelectedAccount] = createSignal<LinkedAccount | null>(null);
+  const [tweetText, setTweetText] = createSignal('');
+  const { user } = useAuth();
 
   const handleDownload = (e: Event) => {
     e.stopPropagation();
@@ -34,11 +46,9 @@ const ImageModal = (props: ImageModalProps) => {
       downloadImage(props.imageData);
     }
   };
-  
 
   const uploadMutation = createMutation(() => ({
     mutationFn: async (imageData: string) => {
-      // Convert base64 to blob
       const base64Data = imageData.split(',')[1] || imageData;
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -48,7 +58,6 @@ const ImageModal = (props: ImageModalProps) => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/png' });
 
-      // Create FormData and append the file
       const formData = new FormData();
       formData.append('image', blob, 'image.png');
 
@@ -82,14 +91,85 @@ const ImageModal = (props: ImageModalProps) => {
         console.log("Image uploaded successfully");
       } catch (error) {
         console.error("Error uploading image:", error);
-        if (error instanceof Error) {
-          console.error("Error message:", error.message);
-          console.error("Error stack:", error.stack);
-        }
-        // You might want to show an error message to the user here
       }
     } else {
       console.error("No image data available");
+    }
+  };
+
+  const linkedAccountsQuery = createQuery(() => ({
+    queryKey: ['linkedAccounts', (user() as User | null)?.id],
+    queryFn: async (): Promise<LinkedAccount[]> => {
+      const currentUser = user() as User | null;
+      if (!currentUser) return [];
+      const { data, error } = await supabase
+        .from('user_linked_accounts')
+        .select('id, username')
+        .eq('user_id', currentUser.id)
+        .eq('provider', 'twitter');
+      if (error) throw error;
+      return data.map(account => ({
+        ...account,
+        twitter_account_id: account.id // Assuming 'id' is the Twitter account ID
+      }));
+    },
+    enabled: !!user(),
+  }));
+
+  const postTweetMutation = createMutation(() => ({
+    mutationFn: async (variables: { userId: string; twitterAccountId: string; imageUrl: string; tweetText: string }) => {
+      const response = await fetch(`${API_BASE_URL}/api/twitter/post`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(variables),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to post tweet: ${JSON.stringify(errorData)}`);
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      alert('Tweet posted successfully!');
+    },
+    onError: (error: Error) => {
+      console.error('Error posting tweet:', error);
+      alert(`Failed to post tweet. ${error.message}`);
+    },
+  }));
+
+  const handlePostTweet = async (e: Event) => {
+    e.stopPropagation();
+    const currentUser = user();
+    if (!currentUser || !selectedAccount() || !props.imageData) return;
+    
+    try {
+      // First, upload the image to R2
+      const uploadResult = await uploadMutation.mutateAsync(props.imageData);
+      const imageUrl = normalizeUrl(uploadResult.url);
+
+      // Debug: Log the selected account value
+      console.log('Selected account:', selectedAccount());
+
+      // Ensure we're using the correct ID from the selected account
+      const selectedAccountData = selectedAccount() as LinkedAccount;
+      if (!selectedAccountData || !selectedAccountData.twitter_account_id) {
+        console.error('Invalid Twitter account:', selectedAccountData);
+        throw new Error('Invalid Twitter account selected');
+      }
+
+      // Then post the tweet with the R2 image URL
+      await postTweetMutation.mutateAsync({
+        userId: String((currentUser as User).id),
+        twitterAccountId: selectedAccountData.twitter_account_id,
+        imageUrl,
+        tweetText: tweetText(),
+      });
+    } catch (error) {
+      console.error('Error in tweet posting process:', error);
+      alert('An error occurred while posting the tweet. Please try again.');
     }
   };
 
@@ -104,18 +184,15 @@ const ImageModal = (props: ImageModalProps) => {
     setTimeout(() => {
       setIsRendered(false);
       props.onClose();
-    }, 300); // Wait for the fade-out transition to complete
+    }, 300);
   };
 
   createEffect(() => {
     if (props.isOpen) {
       setIsRendered(true);
-      // Use setTimeout to ensure the modal is rendered before setting it to visible
       setTimeout(() => setIsVisible(true), 50);
     }
   });
-
-  const { user } = useAuth();
 
   return (
     <Show when={isRendered()}>
@@ -133,24 +210,68 @@ const ImageModal = (props: ImageModalProps) => {
           <img
             src={`data:image/png;base64,${props.imageData}`}
             alt="Expanded image"
-            class="max-w-full max-h-[80vh] object-contain mx-auto"
+            class="max-w-full max-h-[60vh] object-contain mx-auto"
           />
         </div>
-        <div class="mt-4 space-x-4">
-          <Button
-            onClick={handleDownload}
-            class="px-6 py-2 bg-blue-600 bg-opacity-80 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-          >
-            Download
-          </Button>
-          <Show when={user()}>
+        <div class="mt-4 space-y-4 w-full max-w-md">
+          <div class="flex space-x-4">
             <Button
-              onClick={handleSaveToR2}
-              class="px-6 py-2 bg-green-600 bg-opacity-80 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
-              disabled={uploadMutation.isPending}
+              onClick={handleDownload}
+              class="flex-1 px-6 py-2 bg-blue-600 bg-opacity-80 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
             >
-              {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
+              Download
             </Button>
+            <Show when={user()}>
+              <Button
+                onClick={handleSaveToR2}
+                class="flex-1 px-6 py-2 bg-green-600 bg-opacity-80 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
+                disabled={uploadMutation.isPending}
+              >
+                {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
+              </Button>
+            </Show>
+          </div>
+          
+          <Show when={user() && linkedAccountsQuery.data?.length}>
+            <div class="space-y-2">
+              <Select
+                options={linkedAccountsQuery.data || []}
+                onChange={(value) => {
+                  console.log('Selected value:', value); // Debug: Log the selected value
+                  setSelectedAccount(value as LinkedAccount | null);
+                }}
+                itemComponent={(props) => (
+                  <SelectItem item={props.item}>@{props.item.rawValue.username}</SelectItem>
+                )}
+                optionValue="id"
+                optionTextValue="username"
+              >
+                <SelectTrigger>
+                  <SelectValue<LinkedAccount>>
+                    {(state) => {
+                      const selected = state.selectedOption();
+                      return selected ? `@${selected.username}` : "Select Twitter account";
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent />
+              </Select>
+              <Input
+                type="text"
+                placeholder="Tweet text"
+                value={tweetText()}
+                onInput={(e) => setTweetText(e.currentTarget.value)}
+                class="w-full"
+                maxLength={280}
+              />
+              <Button
+                onClick={handlePostTweet}
+                disabled={!selectedAccount() || postTweetMutation.isPending}
+                class="w-full px-6 py-2 bg-blue-500 bg-opacity-80 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
+              >
+                {postTweetMutation.isPending ? 'Posting...' : 'Post to Twitter'}
+              </Button>
+            </div>
           </Show>
         </div>
       </div>

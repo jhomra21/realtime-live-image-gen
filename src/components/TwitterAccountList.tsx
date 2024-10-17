@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
 
-const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
 const TwitterAccountList = () => {
     const { user } = useAuth();
@@ -26,14 +26,14 @@ const TwitterAccountList = () => {
                     .select('provider, username')
                     .eq('user_id', (currentUser as any).id)
                     .eq('provider', 'twitter')
-                    .maybeSingle();
+                    
 
                 if (error) {
                     console.error('Error fetching Twitter link:', error);
                     return { linked: false, username: null };
                 }
 
-                return { linked: !!data, username: data?.username || null };
+                return { linked: !!data, username: data[0]?.username || null };
             } catch (error) {
                 console.error('Error fetching Twitter link:', error);
                 return { linked: false, username: null };

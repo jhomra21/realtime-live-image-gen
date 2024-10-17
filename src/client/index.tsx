@@ -17,7 +17,7 @@ import TwitterLinkError from '../components/TwitterLinkError'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
-const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
 const queryClient = new QueryClient({
   defaultOptions: {

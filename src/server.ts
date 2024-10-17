@@ -9,6 +9,8 @@ import { createHmac } from 'crypto'
 
 const app = new Hono()
 
+const API_LOCAL_URL = 'http://127.0.0.1:8787'
+
 // Apply CORS middleware to all routes
 app.use('*', cors({
   origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev'],
@@ -172,7 +174,7 @@ app.get('/twitter/auth/callback', async (c) => {
     const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
     const clientSecret = (c.env as any).TWITTER_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET;
     // change this to your local url when testing
-    // const redirectUri = 'http://localhost:3000/twitter/auth/callback';
+    // const redirectUri = `${API_LOCAL_URL}/twitter/auth/callback`;
     const redirectUri = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback`;
 
     const params = new URLSearchParams({
@@ -310,7 +312,7 @@ app.get('/twitter/auth', async (c) => {
   }
 
   // change this to your local url when testing
-  // const callbackUrl = 'http://localhost:3000/twitter/auth/callback';
+  // const callbackUrl = `${API_LOCAL_URL}/twitter/auth/callback`;
   const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
   const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
   const authorizationUrl = 'https://twitter.com/i/oauth2/authorize';
@@ -348,6 +350,197 @@ async function generateCodeChallenge(codeVerifier: string) {
 async function generateCodeVerifier() {
   const codeVerifier = crypto.randomUUID() + crypto.randomUUID() + crypto.randomUUID();
   return codeVerifier;
+}
+
+// Add this new route to handle Twitter image upload and tweeting
+app.post('/api/twitter/post', async (c) => {
+  // Set CORS headers
+  c.header('Access-Control-Allow-Origin', 'https://realtime-live-image-gen.pages.dev')
+  c.header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+
+  // Handle OPTIONS request for CORS preflight
+  if (c.req.method === 'OPTIONS') {
+    return c.text('', 204)
+  }
+
+  const schema = z.object({
+    userId: z.string().uuid(),
+    twitterAccountId: z.string(),
+    imageUrl: z.string().url(),
+    tweetText: z.string().max(280),
+  })
+
+  try {
+    const body = await c.req.json();
+    console.log('Received data:', body); // Log the received data
+
+    const { userId, twitterAccountId, imageUrl, tweetText } = schema.parse(body);
+    
+    const supabase = createClient(
+      (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+      (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    )
+
+    // Fetch the user's Twitter access token
+    const { data: accountData, error: accountError } = await supabase
+      .from('user_linked_accounts')
+      .select('access_token, refresh_token, expires_at')
+      .eq('user_id', userId)
+      .eq('provider', 'twitter')
+      .eq('id', twitterAccountId)
+      .single()
+
+    if (accountError) {
+      console.error('Error fetching Twitter account data:', accountError);
+      return c.json({ error: 'Failed to fetch Twitter account data', details: accountError.message }, 400)
+    }
+
+    if (!accountData) {
+      return c.json({ error: 'Twitter account not found' }, 404)
+    }
+
+    // Check if the token is expired and refresh if necessary
+    if (new Date(accountData.expires_at) <= new Date()) {
+      const refreshedToken = await refreshTwitterToken(c, accountData.refresh_token, userId, twitterAccountId)
+      if (!refreshedToken) {
+        return c.json({ error: 'Failed to refresh Twitter token' }, 400)
+      }
+      accountData.access_token = refreshedToken
+    }
+
+    // Upload the image to Twitter
+    const mediaId = await uploadImageToTwitter(imageUrl, accountData.access_token)
+    if (!mediaId) {
+      return c.json({ error: 'Failed to upload image to Twitter' }, 500)
+    }
+
+    // Post the tweet with the uploaded image
+    const tweetResult = await postTweet(tweetText, mediaId, accountData.access_token)
+    if (!tweetResult) {
+      return c.json({ error: 'Failed to post tweet' }, 500)
+    }
+
+    return c.json({ success: true, tweetId: tweetResult.id })
+  } catch (error: any) {
+    console.error('Error posting to Twitter:', error)
+    return c.json({ error: error.toString(), details: error.message }, 500)
+  }
+})
+
+async function refreshTwitterToken(c: any, refreshToken: string, userId: string, accountId: string) {
+  const tokenUrl = 'https://api.twitter.com/2/oauth2/token'
+  const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID
+  const clientSecret = (c.env as any).TWITTER_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET
+
+  const params = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: clientId,
+  })
+
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
+      },
+      body: params
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // Update the token in the database
+    const supabase = createClient(
+      (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+      (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    )
+
+    const { error } = await supabase
+      .from('user_linked_accounts')
+      .update({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: new Date(Date.now() + data.expires_in * 1000).toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', accountId)
+
+    if (error) {
+      throw new Error('Failed to update token in database')
+    }
+
+    return data.access_token
+  } catch (error) {
+    console.error('Error refreshing Twitter token:', error)
+    return null
+  }
+}
+
+async function uploadImageToTwitter(imageUrl: string, accessToken: string) {
+  try {
+    // Fetch the image
+    const imageResponse = await fetch(imageUrl)
+    const imageBuffer = await imageResponse.arrayBuffer()
+
+    // Upload the image to Twitter
+    const uploadUrl = 'https://upload.twitter.com/1.1/media/upload.json'
+    const formData = new FormData()
+    formData.append('media', new Blob([imageBuffer]), 'image.png')
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: formData
+    })
+
+    if (!uploadResponse.ok) {
+      throw new Error(`HTTP error! status: ${uploadResponse.status}`)
+    }
+
+    const uploadData = await uploadResponse.json()
+    return uploadData.media_id_string
+  } catch (error) {
+    console.error('Error uploading image to Twitter:', error)
+    return null
+  }
+}
+
+async function postTweet(text: string, mediaId: string, accessToken: string) {
+  try {
+    const tweetUrl = 'https://api.twitter.com/2/tweets'
+    const payload = {
+      text: text,
+      media: {
+        media_ids: [mediaId]
+      }
+    }
+
+    const response = await fetch(tweetUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error posting tweet:', error)
+    return null
+  }
 }
 
 export default app

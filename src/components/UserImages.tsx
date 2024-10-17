@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { UserImageModal } from './UserImageModal';
 import { useAuth } from '../hooks/useAuth';
 import { useQueryClient } from '@tanstack/solid-query';
+import ImageModal from './ImageModal';
 
 const UserImageSchema = z.object({
   id: z.string().uuid(),
@@ -19,6 +20,7 @@ export function UserImages() {
   const [selectedImage, setSelectedImage] = createSignal<string | null>(null);
   const [isModalOpen, setIsModalOpen] = createSignal(false);
   const queryClient = useQueryClient();
+  const [selectedImageUrl, setSelectedImageUrl] = createSignal<string | null>(null);
 
   const userImagesQuery = createQuery(() => ({
     queryKey: ['userImages'],
@@ -98,6 +100,13 @@ export function UserImages() {
           imageUrl={selectedImage()!}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
+        />
+      </Show>
+      <Show when={selectedImageUrl()}>
+        <ImageModal
+          imageData={selectedImageUrl()}
+          isOpen={!!selectedImageUrl()}
+          onClose={() => setSelectedImageUrl(null)}
         />
       </Show>
     </div>
