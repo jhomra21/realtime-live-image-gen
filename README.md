@@ -21,7 +21,6 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Google Login**: Seamless authentication using Google.
 - **Previous Images**: View and select previously generated images.
 - **Image Upload to R2**: Added functionality to upload generated images to an R2 bucket, providing persistent storage for user-generated content.
-- **Improved Error Handling**: Enhanced error messages and handling mechanisms for better user experience and debugging.
 - **Third-Party Account Linking**: Users can link their Twitter accounts for additional features and integrations.
 
 ## Technologies Used
