@@ -1,57 +1,76 @@
 import { A } from '@solidjs/router';
-import Footer from './Footer';
+import { FiArrowRight } from 'solid-icons/fi';
 
 
 const HomePage = () => {
   return (
     <div class="flex justify-center px-4 py-12 pb-24">
-      <div class="w-full max-w-4xl bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-        <div class="p-8">
-          <section class="text-center mb-12">
-            <h1 class="text-5xl font-bold mb-4">Real Time Image Generation</h1>
-            <p class="text-xl mb-8">Create stunning visuals with the power of Flux AI Image models</p>
+      <div class="w-full max-w-5xl bg-gray-900/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+        <div class="p-12">
+          <section class="text-center mb-16">
+            <h1 class="text-6xl font-bold mb-6 text-white">Real-Time AI Image Generation</h1>
+            <p class="text-2xl mb-10 text-gray-300">Harness the power of FLUX AI to create stunning visuals in seconds</p>
             <A
               href="/generate"
-              class="inline-block px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              class="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-xl font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Start Generating
+              Start Creating <FiArrowRight class="ml-2" />
             </A>
           </section>
 
-          <section class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+          <section class="grid grid-cols-1 md:grid-cols-2 gap-16 mb-16">
             <div>
-              <h2 class="text-3xl font-bold mb-4 text-blue-300">Unleash Your Creativity</h2>
-              <p class="text-lg text-gray-300">
-                Explore the capabilities of FLUX image generation models, designed to empower your creative vision.
-              </p>
+              <h2 class="text-3xl font-bold mb-6 text-blue-300">Unleash Your Creativity</h2>
+              <ul class="text-lg text-gray-300 space-y-4">
+                <li>• Generate unique images from text descriptions</li> 
+                <li>• Perfect for designers, marketers, and creatives</li>
+                <li>• Instantly bring your ideas to life</li>
+              </ul>
             </div>
             <div>
-              <h2 class="text-3xl font-bold mb-4 text-blue-300">How It Works</h2>
-              <ol class="list-decimal list-inside text-lg text-gray-300">
-                <li>Enter a descriptive prompt</li>
-                <li>Choose your preferred settings</li>
-                <li>Watch as AI generates your image</li>
-                <li>Download and use your creation</li>
+              <h2 class="text-3xl font-bold mb-6 text-blue-300">How It Works</h2>
+              <ol class="list-decimal list-inside text-lg text-gray-300 space-y-4">
+                <li>Enter a detailed text prompt describing your desired image</li>
+                <li>Customize generation settings for optimal results</li>
+                <li>Watch in real-time as AI creates your unique visual</li>
+                <li>Download and use your AI-generated masterpiece</li>
               </ol>
             </div>
           </section>
 
-          {/* Updated "Powered by" section with improved logo visibility and links */}
-          <section class="mt-12 pt-8 border-t border-gray-700">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-300">Powered by</h2>
-            <div class="flex justify-center items-center space-x-12">
-              <a href="https://blackforestlabs.ai/" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
+          <section class="mb-16">
+            <h2 class="text-3xl font-bold mb-6 text-center text-blue-300">Key Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div class="bg-gray-800/50 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3 text-white">Lightning Fast</h3>
+                <p class="text-gray-300">Generate high-quality images in seconds, not minutes</p>
+              </div>
+              <div class="bg-gray-800/50 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3 text-white">Keep Favorites</h3>
+                <p class="text-gray-300">Easily save and access your favorite images</p>
+              </div>
+              <div class="bg-gray-800/50 p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3 text-white">High Resolution</h3>
+                <p class="text-gray-300">Download images suitable for professional use</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-16 pt-12 border-t border-gray-700">
+            <h2 class="text-3xl font-bold mb-8 text-center text-blue-300">Powered by Cutting-Edge AI</h2>
+            <div class="flex justify-center items-center space-x-16">
+              <a href="https://blackforestlabs.ai/" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-lg shadow-md transition-transform hover:scale-105">
                 <img 
                   src="/black-forest-labs-logo.png" 
                   alt="Black Forest Labs Logo"
-                  class="h-12 w-auto"
+                  class="h-16 w-auto"
                 />
               </a>
-              <a href="https://www.together.ai" target="_blank" rel="noopener noreferrer" class="bg-white p-4 rounded-lg shadow-md transition-transform hover:scale-105">
+              <a href="https://www.together.ai" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-lg shadow-md transition-transform hover:scale-105">
                 <img 
                   src="/together-ai-logo.png" 
                   alt="Together AI Logo"
-                  class="h-12 w-auto"
+                  class="h-16 w-auto"
                 />
               </a>
             </div>

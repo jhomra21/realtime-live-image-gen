@@ -30,7 +30,6 @@ const queryClient = new QueryClient({
 
 const Nav = () => {
   const { user } = useAuth();
-  const [showAuth, setShowAuth] = createSignal(false);
   const [scrolled, setScrolled] = createSignal(false);
 
   onMount(() => {
@@ -74,29 +73,11 @@ const Nav = () => {
             {user() ? (
               <UserInfo session={{ user: user() }} />
             ) : (
-              <button
-                onClick={() => setShowAuth(true)}
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Login / Sign Up
-              </button>
+              <Auth />
             )}
           </div>
         </div>
       </div>
-      <Show when={showAuth()}>
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div class="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
-            <Auth />
-            <button
-              onClick={() => setShowAuth(false)}
-              class="mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Show>
     </nav>
   );
 };

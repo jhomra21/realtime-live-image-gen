@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth'
 import { UserImageModal } from './UserImageModal'
 import { supabase } from '@/lib/supabase'
 import TwitterAccountList from './TwitterAccountList'
+import { APIKeyDialog } from './APIKeyDialog'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -69,7 +70,7 @@ const GenerateImage = () => {
 
   createEffect(() => {
     if (twitterLinkQuery.data !== undefined) {
-      
+
       setIsTwitterLinked(twitterLinkQuery.data.linked);
     }
   });
@@ -183,30 +184,13 @@ const GenerateImage = () => {
     }
   })
 
-  const validateAPIKey = (key: string) => {
-    // This is a basic validation. Adjust according to the actual format of Together AI API keys
-    const apiKeyRegex = /^[a-zA-Z0-9]{64}$/;
-    if (!key) {
-      setApiKeyError('API key is required');
-      return false;
+  const handleAPIKeySubmit = (apiKey: string) => {
+    setUserAPIKey(apiKey);
+    // If the API key is removed, reset the model to schnell-Free
+    if (!apiKey) {
+      setModelName('black-forest-labs/FLUX.1-schnell-Free');
     }
-    if (!apiKeyRegex.test(key)) {
-      setApiKeyError('Invalid API key format');
-      return false;
-    }
-    setApiKeyError('');
-    return true;
-  }
-
-  const handleAPIKeySubmit = () => {
-    if (validateAPIKey(userAPIKey())) {
-      setShowAPIKeyModal(false);
-      // If the API key is removed, reset the model to schnell-Free
-      if (!userAPIKey()) {
-        setModelName('black-forest-labs/FLUX.1-schnell-Free');
-      }
-    }
-  }
+  };
 
   // Add a new effect to watch for changes in the userAPIKey
   createEffect(() => {
@@ -317,9 +301,18 @@ const GenerateImage = () => {
             <AccordionContent>
               <div class="flex items-center mb-2">
                 <Tooltip content="API key is optional. Enter your key for higher quality results and faster generation.">
+                  {/* Replace the existing API Key Modal with the new component */}
+                  <APIKeyDialog
+                    isOpen={showAPIKeyModal()}
+                    onClose={() => setShowAPIKeyModal(false)}
+                    onSubmit={handleAPIKeySubmit}
+                    initialApiKey={userAPIKey()}
+                  />
+
+                  {/* Make sure the "Enter API Key" button is correctly wired up */}
                   <Button
                     onClick={() => setShowAPIKeyModal(true)}
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
                   >
                     Enter API Key
                   </Button>
@@ -501,6 +494,8 @@ const GenerateImage = () => {
           </Show>
         </div>
       </div>
+
+
     </div>
   )
 }
