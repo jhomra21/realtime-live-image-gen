@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
 import { createMutation, createQuery } from '@tanstack/solid-query';
 import { useAuth } from '../hooks/useAuth';
-import { User } from '@supabase/supabase-js';
+
 
 // Add this interface definition
 interface LinkedAccount {
@@ -92,52 +92,7 @@ const ImageModal = (props: ImageModalProps) => {
       console.error("No image data available");
     }
   };
-
-  const linkedAccountsQuery = createQuery(() => ({
-    queryKey: ['linkedAccounts', (user() as User | null)?.id],
-    queryFn: async (): Promise<LinkedAccount[]> => {
-      const currentUser = user() as User | null;
-      if (!currentUser) return [];
-      const { data, error } = await supabase
-        .from('user_linked_accounts')
-        .select('id, username')
-        .eq('user_id', currentUser.id)
-        .eq('provider', 'twitter');
-      if (error) throw error;
-      return data.map(account => ({
-        ...account,
-        twitter_account_id: account.id // Assuming 'id' is the Twitter account ID
-      }));
-    },
-    enabled: !!user(),
-  }));
-
-  const postTweetMutation = createMutation(() => ({
-    mutationFn: async (variables: { userId: string; twitterAccountId: string; imageUrl: string; tweetText: string }) => {
-      const response = await fetch(`${API_BASE_URL}/api/twitter/post`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(variables),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to post tweet: ${JSON.stringify(errorData)}`);
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      alert('Tweet posted successfully!');
-    },
-    onError: (error: Error) => {
-      console.error('Error posting tweet:', error);
-      alert(`Failed to post tweet. ${error.message}`);
-    },
-  }));
-
   
-
   const handleOutsideClick = (e: MouseEvent) => {
     if (e.target === e.currentTarget) {
       closeModal();

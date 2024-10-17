@@ -1,7 +1,4 @@
 import { Show, createSignal, onCleanup, createEffect, For } from 'solid-js';
-import { createQuery } from '@tanstack/solid-query';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '../hooks/useAuth';
 
 import { Button } from './ui/button';
 import {
@@ -11,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
+import { useTwitterAccounts } from '@/hooks/useTwitterAccounts';
 
 interface UserImageModalProps {
   imageUrl: string;
@@ -19,7 +17,7 @@ interface UserImageModalProps {
 }
 
 export const UserImageModal = (props: UserImageModalProps) => {
-  const { user } = useAuth();
+  
   const [isVisible, setIsVisible] = createSignal(false);
   const [isRendered, setIsRendered] = createSignal(false);
   const [selectedAccount, setSelectedAccount] = createSignal("");
@@ -35,7 +33,7 @@ export const UserImageModal = (props: UserImageModalProps) => {
     setTimeout(() => {
       setIsRendered(false);
       props.onClose();
-    }, 300); // Wait for the fade-out transition to complete
+    }, 150); // Wait for the fade-out transition to complete
   };
 
   createEffect(() => {
@@ -46,11 +44,7 @@ export const UserImageModal = (props: UserImageModalProps) => {
     }
   });
 
-
-
-  function getLinkedAccounts(): string[] {
-    return  ['testing'];
-  }
+  const linkedAccountsQuery = useTwitterAccounts();
 
   return (
     <Show when={isRendered()}>
@@ -70,20 +64,36 @@ export const UserImageModal = (props: UserImageModalProps) => {
             alt="User image"
             class="max-w-full max-h-[80vh] object-contain mx-auto"
           />
+          {/* const usernames = data.map(account => account.username);
+        console.log('Fetched Twitter account usernames:', usernames); */}
           <div class="mt-4">
-            <Select
-              options={getLinkedAccounts()}
-              placeholder="Select an account..."
-              itemComponent={(props) => (
-                <SelectItem item={props.item}>@{props.item.textValue}</SelectItem>
-              )}
-              onChange={(value) => setSelectedAccount(value as string)}
-            >
-              <SelectTrigger class="w-[180px]">
-                <SelectValue<string>>{(state) => state.selectedOption() ? `@${state.selectedOption()}` : 'Select an account...'}</SelectValue>
-              </SelectTrigger>
-              <SelectContent />
-            </Select>
+            {linkedAccountsQuery.isLoading ? (
+              <p>Loading accounts...</p>
+            ) : linkedAccountsQuery.isError ? (
+              <p>Error loading accounts: {linkedAccountsQuery.error.message}</p>
+            ) : linkedAccountsQuery.data && linkedAccountsQuery.data.length > 0 ? (
+              <Select
+                options={linkedAccountsQuery.data.map(account => account.username) || []}
+                placeholder="Select an account..."
+                itemComponent={(props) => (
+                  <SelectItem item={props.item}>@{props.item.textValue}</SelectItem>
+                )}
+                onChange={(value) => setSelectedAccount(value as any)}
+              >
+                <SelectTrigger class="w-[180px]">
+                  <SelectValue<string>>{(state) => state.selectedOption() ? `@${state.selectedOption()}` : 'Select an account...'}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <For each={linkedAccountsQuery.data || []}>
+                    {(account) => (
+                      <SelectItem item={account.username}>@{account.username}</SelectItem>
+                    )}
+                  </For>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p>No linked Twitter accounts found.</p>
+            )}
           </div>
           <div class="mt-4 flex justify-center">
             <Button onClick={() => console.log(`Post to ${selectedAccount()}`)}>

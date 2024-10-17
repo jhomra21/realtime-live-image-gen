@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Badge } from './ui/badge'
 import { Card } from './ui/card'
+import { useTwitterAccounts } from '@/hooks/useTwitterAccounts'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
@@ -12,31 +13,7 @@ const TwitterAccountList = () => {
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
-    const twitterAccountsQuery = createQuery(() => ({
-        queryKey: ['twitterAccounts', (user() as any)?.id],
-        queryFn: async () => {
-            const currentUser = user();
-            if (!currentUser) return [];
-            try {
-                const { data, error } = await supabase
-                    .from('user_linked_accounts')
-                    .select('username')
-                    .eq('user_id', (currentUser as any).id)
-                    .eq('provider', 'twitter');
-
-                if (error) {
-                    console.error('Error fetching Twitter accounts:', error);
-                    return [];
-                }
-
-                return data || [];
-            } catch (error) {
-                console.error('Error fetching Twitter accounts:', error);
-                return [];
-            }
-        },
-        enabled: !!user(),
-    }));
+    const twitterAccountsQuery = useTwitterAccounts();
 
     const isTwitterLinked = () => twitterAccountsQuery.data && twitterAccountsQuery.data.length > 0;
 
