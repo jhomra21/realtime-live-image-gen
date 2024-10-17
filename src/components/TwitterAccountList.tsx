@@ -41,9 +41,20 @@ const TwitterAccountList = () => {
             const finalAuthUrl = `${authUrl}&userId=${session.user.id}`;
             window.location.href = finalAuthUrl;
         },
+        onSuccess: () => {
+            toast({
+                title: "Account linked",
+                description: "Twitter account has been linked successfully.",
+            });
+        },
         onError: (error) => {
             console.error('Error linking Twitter account:', error);
             // Handle error (e.g., show an error message to the user)
+            toast({
+                title: "Error",
+                description: "Failed to link Twitter account. Please try again.",
+                variant: "destructive",
+            });
         },
     }));
 
