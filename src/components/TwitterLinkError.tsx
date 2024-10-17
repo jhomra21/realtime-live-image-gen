@@ -9,7 +9,11 @@ const TwitterLinkError = () => {
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
-    setErrorMessage(error || 'An error occurred while linking your Twitter account.');
+    if (error === 'account_linked_to_other_user') {
+      setErrorMessage('This Twitter account is already linked to another user.');
+    } else {
+      setErrorMessage('An error occurred while linking your Twitter account.');
+    }
   });
 
   const handleGoToGenerate = () => {

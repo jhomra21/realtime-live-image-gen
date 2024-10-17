@@ -196,16 +196,22 @@ app.get('/twitter/auth/callback', async (c) => {
       .single();
 
     if (linkError && linkError.code !== 'PGRST116') {
+      console.error('Error checking existing links:', linkError);
       throw new Error('Error checking existing links');
     }
     
     if (existingLink) {
+      console.log('Existing link found:', existingLink);
       if (existingLink.user_id === validUserId) {
-        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+        console.log('Account already linked to this user');
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate?message=already_linked`);
       } else {
-        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}twitter-linked-error`);
+        console.log('Account linked to a different user');
+        return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/twitter-linked-error?error=account_linked_to_other_user`);
       }
     }
+
+    console.log('No existing link found, proceeding with linking');
 
     // Add the Twitter account information to the Supabase table
     const { data, error } = await supabase

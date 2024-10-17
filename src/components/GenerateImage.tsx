@@ -18,6 +18,7 @@ import { UserImageModal } from './UserImageModal'
 import { supabase } from '@/lib/supabase'
 import TwitterAccountList from './TwitterAccountList'
 import { APIKeyDialog } from './APIKeyDialog'
+import { useSearchParams } from '@solidjs/router';
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://localhost:3000';
 
@@ -42,6 +43,7 @@ const GenerateImage = () => {
   const [isUserImageModalOpen, setIsUserImageModalOpen] = createSignal(false)
   const [isTwitterLinked, setIsTwitterLinked] = createSignal(false);
   const [linkedAccounts, setLinkedAccounts] = createSignal<Array<{ username: string }>>([])
+  const [searchParams] = useSearchParams();
 
   const queryClient = useQueryClient()
 
