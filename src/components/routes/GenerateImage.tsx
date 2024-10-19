@@ -1,23 +1,23 @@
 import { createSignal, createEffect, Show, onMount } from 'solid-js'
 import { createQuery, createMutation, useQueryClient } from '@tanstack/solid-query'
 import { debounce } from '@solid-primitives/scheduled'
-import { Tooltip } from '../components/ui/tooltip'
-import { UserImages } from './UserImages'
-import PreviousImages from './PreviousImages'
-import { usePreviousImages, saveImage } from '../hooks/usePreviousImages'
-import ImageModal, { normalizeUrl } from './ImageModal'
-import { Button } from './ui/button'
+import { Tooltip } from '@/components/ui/tooltip'
+import { UserImages } from '@/components/UserImages'
+import PreviousImages from '@/components/PreviousImages'
+import { usePreviousImages, saveImage } from '@/hooks/usePreviousImages'
+import ImageModal, { normalizeUrl } from '@/components/ImageModal'
+import { Button } from '@/components/ui/button'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
 } from "@/components/ui/accordion"
-import { useAuth } from '../hooks/useAuth'
-import { UserImageModal } from './UserImageModal'
+import { useAuth } from '@/hooks/useAuth'
+import { UserImageModal } from '@/components/UserImageModal'
 import { supabase } from '@/lib/supabase'
-import TwitterAccountList from './TwitterAccountList'
-import { APIKeyDialog } from './APIKeyDialog'
+import TwitterAccountList from '@/components/TwitterAccountList'
+import { APIKeyDialog } from '@/components/APIKeyDialog'
 import { useSearchParams } from '@solidjs/router';
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';

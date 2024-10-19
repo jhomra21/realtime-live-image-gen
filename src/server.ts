@@ -174,8 +174,8 @@ app.get('/twitter/auth/callback', async (c) => {
     const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
     const clientSecret = (c.env as any).TWITTER_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET;
     // change this to your local url when testing
-    // const redirectUri = `${API_LOCAL_URL}/twitter/auth/callback`;
-    const redirectUri = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback`;
+    const redirectUri = `${API_LOCAL_URL}/twitter/auth/callback`;
+    // const redirectUri = `https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback`;
 
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -275,7 +275,12 @@ app.get('/twitter/auth/callback', async (c) => {
       }
     }
 
-    console.log('Twitter account linked successfully');
+    console.log('Twitter account linked successfully:', {
+      userId: validUserId,
+      twitterUserId,
+      screenName,
+      expiresAt
+    });
     return c.redirect(`${(c.env as any).CLOUDFLARE_PAGES_URL || process.env.CLOUDFLARE_PAGES_URL}/generate?message=link_success`);
   } catch (error) {
     console.error('Unexpected error linking Twitter account:', error);
@@ -312,8 +317,8 @@ app.get('/twitter/auth', async (c) => {
   }
 
   // change this to your local url when testing
-  // const callbackUrl = `${API_LOCAL_URL}/twitter/auth/callback`;
-  const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
+  const callbackUrl = `${API_LOCAL_URL}/twitter/auth/callback`;
+  // const callbackUrl = 'https://realtime-image-gen-api.jhonra121.workers.dev/twitter/auth/callback';
   const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
   const authorizationUrl = 'https://twitter.com/i/oauth2/authorize';
 
@@ -327,7 +332,7 @@ app.get('/twitter/auth', async (c) => {
     response_type: 'code',
     client_id: clientId,
     redirect_uri: callbackUrl,
-    scope: 'tweet.read users.read offline.access',
+    scope: 'tweet.read users.read offline.access tweet.write',
     state: state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256'
@@ -350,6 +355,137 @@ async function generateCodeChallenge(codeVerifier: string) {
 async function generateCodeVerifier() {
   const codeVerifier = crypto.randomUUID() + crypto.randomUUID() + crypto.randomUUID();
   return codeVerifier;
+}
+
+app.post('/twitter/post', async (c) => {
+  const schema = z.object({
+    text: z.string().max(280),
+    accountUsername: z.string(),
+  });
+
+  try {
+    const body = await c.req.json();
+    const { text, accountUsername } = schema.parse(body);
+
+    // Get the authorization header
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Missing or invalid Authorization header' }, 401);
+    }
+
+    // Extract the token
+    const token = authHeader.split(' ')[1];
+
+    const supabase = createClient(
+      (c.env as any).VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+      (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    // Get user from session using the token
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return c.json({ error: 'Invalid session' }, 401);
+    }
+
+    // Fetch the user's Twitter account details
+    const { data: account, error: accountError } = await supabase
+      .from('user_linked_accounts')
+      .select('*')
+      .eq('username', accountUsername)
+      .eq('user_id', user.id)
+      .single();
+
+    if (accountError || !account) {
+      return c.json({ error: 'Twitter account not found' }, 404);
+    }
+
+    // Check if the token is expired and refresh if necessary
+    if (new Date(account.expires_at) <= new Date()) {
+      console.log('Token expired, attempting to refresh');
+      const refreshedTokens = await refreshTwitterToken(account.refresh_token, c);
+      if (!refreshedTokens) {
+        console.error('Failed to refresh Twitter token');
+        return c.json({ error: 'Failed to refresh Twitter token' }, 401);
+      }
+
+      // Update the account with new tokens
+      const { error: updateError } = await supabase
+        .from('user_linked_accounts')
+        .update({
+          access_token: refreshedTokens.access_token,
+          refresh_token: refreshedTokens.refresh_token,
+          expires_at: new Date(Date.now() + refreshedTokens.expires_in * 1000).toISOString(),
+        })
+        .eq('id', account.id);
+
+      if (updateError) {
+        console.error('Error updating tokens:', updateError);
+        return c.json({ error: 'Failed to update tokens' }, 500);
+      }
+
+      account.access_token = refreshedTokens.access_token;
+    }
+
+    // Post the tweet using the potentially refreshed token
+    const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${account.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!tweetResponse.ok) {
+      const errorData = await tweetResponse.json();
+      console.error('Twitter API error:', errorData);
+      return c.json({ error: 'Failed to post tweet', details: errorData }, tweetResponse.status as any);
+    }
+
+    const tweetData = await tweetResponse.json();
+    return c.json({ success: true, tweet: tweetData.data });
+  } catch (error) {
+    console.error('Error posting tweet:', error);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: 'Invalid request data', details: error.issues }, 400);
+    }
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Add this function to refresh the Twitter token
+async function refreshTwitterToken(refreshToken: string, c: any) {
+  const tokenUrl = 'https://api.twitter.com/2/oauth2/token';
+  const clientId = (c.env as any).TWITTER_CLIENT_ID || process.env.TWITTER_CLIENT_ID;
+  const clientSecret = (c.env as any).TWITTER_CLIENT_SECRET || process.env.TWITTER_CLIENT_SECRET;
+
+  const params = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: clientId,
+  });
+
+  try {
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
+      },
+      body: params
+    });
+
+    if (!response.ok) {
+      console.error('Failed to refresh token:', response.status, await response.text());
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
 }
 
 export default app
