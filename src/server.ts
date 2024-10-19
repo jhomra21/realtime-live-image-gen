@@ -400,38 +400,34 @@ app.post('/twitter/post', async (c) => {
       return c.json({ error: 'Twitter account not found' }, 404);
     }
 
-    // Check if the token is expired and refresh if necessary
-    if (new Date(account.expires_at) <= new Date()) {
-      console.log('Token expired, attempting to refresh');
-      const refreshedTokens = await refreshTwitterToken(account.refresh_token, c);
-      if (!refreshedTokens) {
-        console.error('Failed to refresh Twitter token');
-        return c.json({ error: 'Failed to refresh Twitter token' }, 401);
-      }
-
-      // Update the account with new tokens
-      const { error: updateError } = await supabase
-        .from('user_linked_accounts')
-        .update({
-          access_token: refreshedTokens.access_token,
-          refresh_token: refreshedTokens.refresh_token,
-          expires_at: new Date(Date.now() + refreshedTokens.expires_in * 1000).toISOString(),
-        })
-        .eq('id', account.id);
-
-      if (updateError) {
-        console.error('Error updating tokens:', updateError);
-        return c.json({ error: 'Failed to update tokens' }, 500);
-      }
-
-      account.access_token = refreshedTokens.access_token;
+    // Always refresh the token before making a request
+    console.log('Refreshing Twitter token');
+    const refreshedTokens = await refreshTwitterToken(account.refresh_token, c);
+    if (!refreshedTokens) {
+      console.error('Failed to refresh Twitter token');
+      return c.json({ error: 'Failed to refresh Twitter token' }, 401);
     }
 
-    // Post the tweet using the potentially refreshed token
+    // Update the account with new tokens
+    const { error: updateError } = await supabase
+      .from('user_linked_accounts')
+      .update({
+        access_token: refreshedTokens.access_token,
+        refresh_token: refreshedTokens.refresh_token,
+        expires_at: new Date(Date.now() + refreshedTokens.expires_in * 1000).toISOString(),
+      })
+      .eq('id', account.id);
+
+    if (updateError) {
+      console.error('Error updating tokens:', updateError);
+      return c.json({ error: 'Failed to update tokens' }, 500);
+    }
+
+    // Post the tweet using the refreshed token
     const tweetResponse = await fetch('https://api.twitter.com/2/tweets', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${account.access_token}`,
+        'Authorization': `Bearer ${refreshedTokens.access_token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ text }),
@@ -477,11 +473,14 @@ async function refreshTwitterToken(refreshToken: string, c: any) {
     });
 
     if (!response.ok) {
-      console.error('Failed to refresh token:', response.status, await response.text());
+      const errorText = await response.text();
+      console.error('Failed to refresh token:', response.status, errorText);
       return null;
     }
 
-    return await response.json();
+    const tokenData = await response.json();
+    console.log('Token refreshed successfully');
+    return tokenData;
   } catch (error) {
     console.error('Error refreshing token:', error);
     return null;

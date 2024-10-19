@@ -40,6 +40,9 @@ const TwitterPost = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (errorData.error === 'Failed to refresh Twitter token') {
+          throw new Error('Twitter token expired. Please reauthorize your account.');
+        }
         throw new Error(errorData.error || 'Failed to post tweet');
       }
 
@@ -56,11 +59,19 @@ const TwitterPost = () => {
     },
     onError: (error) => {
       console.error('Error posting tweet:', error);
-      toast({
-        title: "Error",
-        description: "Failed to post tweet. Please try again.",
-        variant: "destructive",
-      });
+      if (error.message === 'Twitter token expired. Please reauthorize your account.') {
+        toast({
+          title: "Reauthorization required",
+          description: "Your Twitter account needs to be reauthorized. Please unlink and relink your account.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to post tweet. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   }));
 
