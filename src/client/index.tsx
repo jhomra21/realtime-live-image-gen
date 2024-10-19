@@ -16,6 +16,8 @@ import { useAuth } from '../hooks/useAuth';
 import TwitterLinkError from '../components/TwitterLinkError'
 import { ToastContainer } from '@/components/ui/toast'
 import TwitterPost from '@/components/routes/TwitterPost'
+import TwitterCallback from '../components/TwitterCallback'
+import TwitterCallbackV2 from '../components/TwitterCallbackV2'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -187,20 +189,24 @@ const Layout: Component<RouteSectionProps> = (props) => (
   </div>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <Router root={Layout}>
-      <Route path="/" component={HomePage} />
-      <Route path="/generate" component={GenerateImage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/login" component={Auth} />
-      <Route path="/signup" component={Auth} />
-      <Route path="/twitter-linked-error" component={TwitterLinkError} />
-      <Route path="/twitter-post" component={TwitterPost} />
-    </Router>
-    <ToastContainer />
-    <Footer />
-  </QueryClientProvider>
-);
+const App: Component = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router root={Layout}>
+        <Route path="/" component={HomePage} />
+        <Route path="/generate" component={GenerateImage} />
+        <Route path="/about" component={AboutPage} />
+        <Route path="/login" component={Auth} />
+        <Route path="/signup" component={Auth} />
+        <Route path="/twitter-linked-error" component={TwitterLinkError} />
+        <Route path="/twitter-post" component={TwitterPost} />
+        <Route path="/twitter-callback" component={TwitterCallback} />
+        <Route path="/twitter-callback-v2" component={TwitterCallbackV2} />
+      </Router>
+      <ToastContainer />
+      <Footer />
+    </QueryClientProvider>
+  );
+};
 
-render(() => <App />, document.getElementById('root')!)
+render(() => <App />, document.getElementById('root') as HTMLElement)

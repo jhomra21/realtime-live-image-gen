@@ -178,3 +178,5 @@ dist
 wrangler.toml
 .wrangler-cache
 .wrangler
+
+auth2previous.txt

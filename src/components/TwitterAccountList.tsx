@@ -13,6 +13,7 @@ const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhon
 
 const TwitterAccountList = () => {
     const { user } = useAuth();
+    const [isLinking, setIsLinking] = createSignal(false);
     const queryClient = useQueryClient();
     const [isDialogOpen, setIsDialogOpen] = createSignal(false);
     const [clickedAccount, setClickedAccount] = createSignal('');
@@ -22,40 +23,37 @@ const TwitterAccountList = () => {
 
     const isTwitterLinked = () => twitterAccountsQuery.data && twitterAccountsQuery.data.length > 0;
 
-    const linkTwitterAccount = createMutation(() => ({
+    const linkTwitterMutation = createMutation(() => ({
         mutationFn: async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 throw new Error('No active session');
             }
-            const response = await fetch(`${API_BASE_URL}/twitter/auth`, {
+            const response = await fetch(`${API_BASE_URL}/twitter/auth/v1`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
                 }
             });
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to initiate Twitter authentication');
+                throw new Error('Failed to initiate Twitter authentication');
             }
-            const { authUrl } = await response.json();
-            const finalAuthUrl = `${authUrl}&userId=${session.user.id}`;
-            window.location.href = finalAuthUrl;
+            const { authUrl, state } = await response.json();
+            // Store the state in localStorage
+            localStorage.setItem('twitterAuthState', state);
+            // Use window.open instead of window.location.href
+            window.open(authUrl, '_blank', 'width=600,height=600');
         },
         onSuccess: () => {
-            toast({
-                title: "Account linked",
-                description: "Twitter account has been linked successfully.",
-            });
+            setIsLinking(true);
         },
         onError: (error) => {
             console.error('Error linking Twitter account:', error);
-            // Handle error (e.g., show an error message to the user)
             toast({
                 title: "Error",
                 description: "Failed to link Twitter account. Please try again.",
-                variant: "destructive",
             });
-        },
+        }
     }));
 
     const removeTwitterAccount = createMutation(() => ({
@@ -121,11 +119,11 @@ const TwitterAccountList = () => {
             <div class="mt-4">
                 <Card class="p-4 bg-gray-800 border-gray-700">
                     <Button
-                        onClick={() => linkTwitterAccount.mutate()}
-                        disabled={linkTwitterAccount.isPending}
+                        onClick={() => linkTwitterMutation.mutate()}
+                        disabled={linkTwitterMutation.isPending}
                         class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                        {linkTwitterAccount.isPending ? 'Linking...' : 'Link Twitter Account'}
+                        {linkTwitterMutation.isPending ? 'Linking...' : 'Link Twitter Account'}
                     </Button>
                     <Show when={isTwitterLinked()}>
                         <div class="mt-2 flex items-center flex-wrap gap-2">
