@@ -11,11 +11,7 @@ const CoinsPage: Component = () => {
 
   const handleAddCoins = (amount: number) => {
     addCoins(amount);
-    toast({
-      title: "Coins Added",
-      description: `Successfully added ${amount} coins to your balance.`,
-      variant: "default"
-    });
+    
   };
 
   return (

@@ -205,6 +205,12 @@ export function useUserCoins() {
       // Update local query cache with the validated response
       queryClient.setQueryData(ACCOUNT_QUERY_KEY, updatedAccount);
 
+      toast({
+        title: "Coins Added",
+        description: `Successfully added ${amount} coins to your balance.`,
+        variant: "default"
+      });
+
     } catch (error) {
       toast({
         title: "Error",
