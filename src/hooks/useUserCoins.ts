@@ -31,15 +31,28 @@ export function useUserCoins() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      console.log('Fetching account data for user:', user.id);
+
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Account query error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('No account data found');
+        throw new Error('No account data found');
+      }
+
       return AccountSchema.parse(data);
     },
+    retry: 3, // Add retry attempts
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   }));
 
   // Set up realtime subscription
@@ -94,10 +107,68 @@ export function useUserCoins() {
     }
   });
 
+  const updateCoins = async (newAmount: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No user found in updateCoins');
+        throw new Error('User not authenticated');
+      }
+
+      // Validate the new amount
+      if (typeof newAmount !== 'number' || isNaN(newAmount)) {
+        console.error('Invalid amount in updateCoins:', newAmount);
+        throw new Error('Invalid coin amount');
+      }
+
+      // Ensure coins is a non-negative integer
+      const validatedAmount = Math.max(0, Math.floor(newAmount));
+      console.log('Attempting to update coins:', {
+        userId: user.id,
+        newAmount: validatedAmount,
+        environment: import.meta.env.MODE
+      });
+
+      const { data, error } = await supabase
+        .from('accounts')
+        .update({ 
+          coins: validatedAmount,
+          updated_at: new Date().toISOString() // Add this to ensure the row is actually updated
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase update error:', {
+          error,
+          userId: user.id,
+          amount: validatedAmount,
+          environment: import.meta.env.MODE
+        });
+        throw error;
+      }
+
+      if (!data) {
+        console.error('No data returned from update');
+        throw new Error('Failed to update coins');
+      }
+
+      return AccountSchema.parse(data);
+    } catch (error) {
+      console.error('updateCoins error:', {
+        error,
+        environment: import.meta.env.MODE,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+  };
+
   const subtractCoins = async (amount: number) => {
     try {
       const currentCoins = accountQuery.data?.coins;
-      if (typeof currentCoins !== 'number') {
+      if (typeof currentCoins !== 'number' || isNaN(currentCoins)) {
         throw new Error('Current coin balance not available');
       }
 
@@ -105,29 +176,11 @@ export function useUserCoins() {
         throw new Error('Insufficient coins');
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       const newCoinAmount = currentCoins - amount;
-      const { error } = await supabase
-        .from('accounts')
-        .update({ coins: newCoinAmount })
-        .eq('user_id', user.id)
-        .select('*')
-        .single();
+      const updatedAccount = await updateCoins(newCoinAmount);
 
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
-      }
-
-      // Update local query cache
-      queryClient.setQueryData(ACCOUNT_QUERY_KEY, (old: Account) => ({
-        ...old,
-        coins: newCoinAmount
-      }));
+      // Update local query cache with the validated response
+      queryClient.setQueryData(ACCOUNT_QUERY_KEY, updatedAccount);
 
     } catch (error) {
       toast({
@@ -142,33 +195,15 @@ export function useUserCoins() {
   const addCoins = async (amount: number) => {
     try {
       const currentCoins = accountQuery.data?.coins;
-      if (typeof currentCoins !== 'number') {
+      if (typeof currentCoins !== 'number' || isNaN(currentCoins)) {
         throw new Error('Current coin balance not available');
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       const newCoinAmount = currentCoins + amount;
-      const { error } = await supabase
-        .from('accounts')
-        .update({ coins: newCoinAmount })
-        .eq('user_id', user.id)
-        .select('*')
-        .single();
+      const updatedAccount = await updateCoins(newCoinAmount);
 
-      if (error) {
-        console.error('Update error:', error);
-        throw error;
-      }
-
-      // Update local query cache
-      queryClient.setQueryData(ACCOUNT_QUERY_KEY, (old: Account) => ({
-        ...old,
-        coins: newCoinAmount
-      }));
+      // Update local query cache with the validated response
+      queryClient.setQueryData(ACCOUNT_QUERY_KEY, updatedAccount);
 
     } catch (error) {
       toast({
@@ -182,11 +217,14 @@ export function useUserCoins() {
 
   const hasEnoughCoins = () => {
     const currentCoins = accountQuery.data?.coins;
-    return typeof currentCoins === 'number' && currentCoins >= 4;
+    return typeof currentCoins === 'number' && !isNaN(currentCoins) && currentCoins >= 4;
   };
 
   return {
-    coins: () => accountQuery.data?.coins ?? 0,
+    coins: () => {
+      const coins = accountQuery.data?.coins;
+      return typeof coins === 'number' && !isNaN(coins) ? coins : 0;
+    },
     subtractCoins,
     addCoins,
     hasEnoughCoins,
