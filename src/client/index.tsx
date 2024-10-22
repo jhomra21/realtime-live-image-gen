@@ -13,11 +13,10 @@ import AboutPage from '../components/routes/AboutPage'
 import { Transition } from 'solid-transition-group';
 import Footer from '@/components/Footer'
 import { useAuth } from '../hooks/useAuth';
-import TwitterLinkError from '../components/TwitterLinkError'
+
 import { ToastContainer } from '@/components/ui/toast'
-import TwitterPost from '@/components/routes/TwitterPost'
-import TwitterCallback from '../components/TwitterCallback'
-import TwitterCallbackV2 from '../components/TwitterCallbackV2'
+
+
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -93,13 +92,7 @@ const Nav = () => {
             >
               About
             </A> 
-            <A 
-              href="/twitter-post" 
-              class="text-white hover:text-blue-300 transition-colors border-b-2 border-transparent hover:border-blue-300" 
-              activeClass="text-blue-300 border-blue-300"
-            >
-              Tweet
-            </A>
+           
             {user() ? (
               <UserInfo session={{ user: user() }} />
             ) : (
@@ -149,13 +142,7 @@ const Nav = () => {
           >
             About
           </A>
-          <A
-            href="/twitter-post"
-            class="block px-3 py-2 rounded-md text-base font-medium text-white hover:text-blue-300 hover:bg-gray-800"
-            activeClass="text-blue-300 bg-gray-800"
-          >
-            Tweet
-          </A>
+        
           <div class="px-3 py-2">
             {user() ? (
               <div class="contents items-cente">
@@ -198,10 +185,6 @@ const App: Component = () => {
         <Route path="/about" component={AboutPage} />
         <Route path="/login" component={Auth} />
         <Route path="/signup" component={Auth} />
-        <Route path="/twitter-linked-error" component={TwitterLinkError} />
-        <Route path="/twitter-post" component={TwitterPost} />
-        <Route path="/twitter-callback" component={TwitterCallback} />
-        <Route path="/twitter-callback-v2" component={TwitterCallbackV2} />
       </Router>
       <ToastContainer />
       <Footer />

@@ -16,7 +16,6 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { UserImageModal } from '@/components/UserImageModal'
 import { supabase } from '@/lib/supabase'
-import TwitterAccountList from '@/components/TwitterAccountList'
 import { APIKeyDialog } from '@/components/APIKeyDialog'
 import { useSearchParams } from '@solidjs/router';
 
@@ -88,61 +87,7 @@ const GenerateImage = () => {
     }
   });
 
-  const twitterLinkedAccountsQuery = createQuery(() => ({
-    queryKey: ['twitterLinkedAccounts', (user() as any)?.id],
-    queryFn: async () => {
-      const currentUser = user();
-      if (!currentUser) return [];
-      try {
-        const { data, error } = await supabase
-          .from('user_linked_accounts')
-          .select('username')
-          .eq('user_id', (currentUser as any).id)
-          .eq('provider', 'twitter');
-
-        if (error) {
-          console.error('Error fetching linked accounts:', error);
-          return [];
-        }
-        return data || [];
-      } catch (error) {
-        console.error('Error fetching linked accounts:', error);
-        return [];
-      }
-    },
-    enabled: !!user(),
-  }));
-
-  createEffect(() => {
-    if (twitterLinkedAccountsQuery.data) {
-      setLinkedAccounts(twitterLinkedAccountsQuery.data);
-    }
-  });
-
-  const linkTwitterAccount = createMutation(() => ({
-    mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
-      }
-      const response = await fetch(`${API_BASE_URL}/twitter/auth`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to initiate Twitter authentication');
-      }
-      const { authUrl } = await response.json();
-      const finalAuthUrl = `${authUrl}&userId=${session.user.id}`;
-      window.location.href = finalAuthUrl;
-    },
-    onError: (error) => {
-      console.error('Error linking Twitter account:', error);
-      // Handle error (e.g., show an error message to the user)
-    },
-  }));
+  
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -492,9 +437,6 @@ const GenerateImage = () => {
           isOpen={isUserImageModalOpen()}
           onClose={() => setIsUserImageModalOpen(false)}
         />
-
-        {/* Replace the Twitter account linking section with the new component */}
-        <TwitterAccountList />
 
         {/* Debug section */}
         <div class="flex flex-col items-center mt-8">
