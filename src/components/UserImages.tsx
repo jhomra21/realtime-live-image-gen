@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { UserImageModal } from './UserImageModal';
 import { useAuth } from '../hooks/useAuth';
 import { useQueryClient } from '@tanstack/solid-query';
-import { useTwitterAccounts } from '@/hooks/useTwitterAccounts';
+
 
 
 const UserImageSchema = z.object({
@@ -48,7 +48,7 @@ export function UserImages() {
     },
   }));
 
-  const linkedAccountsQuery = useTwitterAccounts();
+
 
   // Set up real-time subscription
   const subscription = supabase
@@ -103,9 +103,6 @@ export function UserImages() {
           imageUrl={selectedImage()!}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
-          linkedAccounts={linkedAccountsQuery.data || []}
-          isLoadingAccounts={linkedAccountsQuery.isLoading}
-          accountsError={linkedAccountsQuery.error}
         />
       </Show>
 
