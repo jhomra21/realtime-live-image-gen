@@ -16,7 +16,7 @@ const HomePage = () => {
                 <div class="absolute rounded-bl-lg bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400"></div>
                 <div class="absolute rounded-br-lg bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-400"></div>
 
-                <h1 class="text-6xl font-bold mb-6 text-white">Real-Time AI Image Generation</h1>
+                <h1 class="text-5xl sm:text-6xl font-bold mb-6 text-white page-title">Real-Time AI Image Generation</h1>
               </div>
             </div>
             
