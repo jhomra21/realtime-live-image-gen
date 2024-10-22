@@ -1,17 +1,25 @@
-import { Component } from 'solid-js';
+import { Component, createEffect } from 'solid-js';
 import { useUserCoins } from '@/hooks/useUserCoins';
 import { Button } from '@/components/ui/button';
 import { UserCoins } from '@/components/UserCoins';
-import { toast } from '@/components/ui/toast';
-import { A } from '@solidjs/router';
+import { useNavigate } from '@solidjs/router';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-const CoinsPage: Component = () => {
+const CoinsPageContent: Component = () => {
   const { coins, addCoins } = useUserCoins();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Add debugging effect
+  createEffect(() => {
+    console.log('Current user:', user());
+    console.log('Current coins:', coins());
+  });
 
   const handleAddCoins = (amount: number) => {
     addCoins(amount);
-    
   };
 
   return (
@@ -37,18 +45,25 @@ const CoinsPage: Component = () => {
           </div>
           
           <div class="mt-8 flex justify-center">
-            <A href="/generate">
-              <Button 
-                variant="default" 
-                class="px-6 bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Back to Generate
-              </Button>
-            </A>
+            <Button 
+              variant="default" 
+              class="px-6 bg-blue-600 text-white hover:bg-blue-700"
+              onClick={() => navigate('/generate')}
+            >
+              Back to Generate
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+const CoinsPage: Component = () => {
+  return (
+    <ProtectedRoute>
+      <CoinsPageContent />
+    </ProtectedRoute>
   );
 };
 

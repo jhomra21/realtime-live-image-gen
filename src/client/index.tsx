@@ -17,6 +17,7 @@ import Footer from '@/components/Footer'
 import { useAuth } from '../hooks/useAuth';
 
 import { ToastContainer } from '@/components/ui/toast'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
