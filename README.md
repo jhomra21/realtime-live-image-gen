@@ -21,7 +21,7 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **Google Login**: Seamless authentication using Google.
 - **Previous Images**: View and select previously generated images.
 - **Image Upload to R2**: Added functionality to upload generated images to an R2 bucket, providing persistent storage for user-generated content.
-- **Third-Party Account Linking**: Users can link their Twitter accounts for additional features and integrations.
+- **💵 User Coins Management**: Users can manage their coin balance, including adding and subtracting coins, with real-time updates.
 
 ## Technologies Used
 
@@ -33,7 +33,6 @@ This project is a real-time AI image generator built using **SolidJS, Hono,** an
 - **[Supabase](https://supabase.com/docs/guides/getting-started/quickstarts/solidjs)**: Used for authentication and database management, using Google login integration.
 - **[Tailwind CSS](https://tailwindcss.com/)**: A utility-first CSS framework for styling.
 - **Zod Validation**: Implemented Zod for request validation, ensuring data integrity and security across the application.
-- **Twitter API Integration**: Utilized for linking and managing Twitter accounts.
 
 ## Deployment
 
@@ -44,17 +43,9 @@ The application is deployed using **Cloudflare Workers** and **Cloudflare Pages*
 
 ## Previous Images
 
-The application allows users to view and select previously generated images. This feature is implemented using local storage to save image data and a custom hook to retrieve and display the images.
-
 - **Saving Images**: When an image is generated, it is saved to the browser's local storage. The `saveImage` function in `src/hooks/usePreviousImages.ts` handles this process by storing the image data along with a unique ID and timestamp.
   
 - **Displaying Images**: The `usePreviousImages` hook retrieves the saved images from local storage and formats them for display. The `PreviousImages` component in `src/components/PreviousImages.tsx` uses this hook to render the images in a grid layout, allowing users to view and select them.
-
-## Third-Party Account Linking
-
-The application supports linking third-party accounts, such as Twitter, to enhance user experience and provide additional features.
-
-- **Twitter Account Linking**: Users can link their Twitter accounts to the application. This feature is implemented using the Twitter API and Supabase for managing linked accounts(supabase auth itself is not used in this case, only to help store linked accounts data).
 
 ## Getting Started
 
