@@ -95,25 +95,44 @@ export function useUserCoins() {
   });
 
   const subtractCoins = async (amount: number) => {
-    const currentCoins = accountQuery.data?.coins ?? 0;
-    if (currentCoins < amount) {
-      throw new Error('Insufficient coins');
-    }
+    try {
+      const currentCoins = accountQuery.data?.coins;
+      if (typeof currentCoins !== 'number') {
+        throw new Error('Current coin balance not available');
+      }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+      if (currentCoins < amount) {
+        throw new Error('Insufficient coins');
+      }
 
-    const { error } = await supabase
-      .from('accounts')
-      .update({ coins: currentCoins - amount })
-      .eq('user_id', user.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-    if (error) {
+      const newCoinAmount = currentCoins - amount;
+      const { error } = await supabase
+        .from('accounts')
+        .update({ coins: newCoinAmount })
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      // Update local query cache
+      queryClient.setQueryData(ACCOUNT_QUERY_KEY, (old: Account) => ({
+        ...old,
+        coins: newCoinAmount
+      }));
+
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update coins",
+        description: error instanceof Error ? error.message : "Failed to update coins",
         variant: "destructive"
       });
       throw error;
@@ -121,29 +140,50 @@ export function useUserCoins() {
   };
 
   const addCoins = async (amount: number) => {
-    const currentCoins = accountQuery.data?.coins ?? 0;
+    try {
+      const currentCoins = accountQuery.data?.coins;
+      if (typeof currentCoins !== 'number') {
+        throw new Error('Current coin balance not available');
+      }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-    const { error } = await supabase
-      .from('accounts')
-      .update({ coins: currentCoins + amount })
-      .eq('user_id', user.id);
+      const newCoinAmount = currentCoins + amount;
+      const { error } = await supabase
+        .from('accounts')
+        .update({ coins: newCoinAmount })
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      // Update local query cache
+      queryClient.setQueryData(ACCOUNT_QUERY_KEY, (old: Account) => ({
+        ...old,
+        coins: newCoinAmount
+      }));
+
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update coins",
+        description: error instanceof Error ? error.message : "Failed to update coins",
         variant: "destructive"
       });
       throw error;
     }
   };
 
-  const hasEnoughCoins = () => (accountQuery.data?.coins ?? 0) >= 4;
+  const hasEnoughCoins = () => {
+    const currentCoins = accountQuery.data?.coins;
+    return typeof currentCoins === 'number' && currentCoins >= 4;
+  };
 
   return {
     coins: () => accountQuery.data?.coins ?? 0,
