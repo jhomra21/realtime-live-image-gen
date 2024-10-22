@@ -1,4 +1,4 @@
-import { createQuery } from '@tanstack/solid-query';
+import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { z } from 'zod';
 
 const ImageSchema = z.object({
@@ -7,7 +7,7 @@ const ImageSchema = z.object({
   timestamp: z.number()
 });
 
-const ImagesSchema = z.array(z.union([ImageSchema, z.string()]));
+const ImagesSchema = z.array(ImageSchema);
 
 export const usePreviousImages = () => {
   return createQuery(() => ({
@@ -16,19 +16,22 @@ export const usePreviousImages = () => {
       const storedImages = localStorage.getItem('previousImages');
       if (storedImages) {
         try {
-          const parsedImages = ImagesSchema.parse(JSON.parse(storedImages));
-          const formattedImages = parsedImages.map(image => {
-            if (typeof image === 'string') {
-              return {
-                id: Date.now().toString(),
-                data: image,
-                timestamp: Date.now()
-              };
-            }
-            return image;
-          });
-          console.log('Retrieved images:', formattedImages);
-          return formattedImages;
+          const parsedImages = JSON.parse(storedImages);
+          
+          // Ensure all image data is stored as strings
+          const fixedImages = parsedImages.map((img: any) => ({
+            ...img,
+            data: typeof img.data === 'object' ? img.data.b64_json : img.data
+          }));
+          
+          const validatedImages = ImagesSchema.parse(fixedImages);
+          
+          console.log('Retrieved images:', validatedImages);
+          
+          // Save the fixed images back to localStorage
+          localStorage.setItem('previousImages', JSON.stringify(validatedImages));
+          
+          return validatedImages;
         } catch (error) {
           console.error('Error parsing stored images:', error);
           return [];
@@ -39,28 +42,20 @@ export const usePreviousImages = () => {
   }));
 };
 
-export const saveImage = (imageData: string) => {
+export const saveImage = (imageData: { id: string, data: string, timestamp: number }) => {
   const storedImages = localStorage.getItem('previousImages');
-  let currentImages: (string | { id: string; data: string; timestamp: number; })[] = [];
+  let currentImages: z.infer<typeof ImageSchema>[] = [];
   
   if (storedImages) {
     try {
-      currentImages = ImagesSchema.parse(JSON.parse(storedImages));
+      currentImages = JSON.parse(storedImages);
     } catch (error) {
       console.error('Error parsing stored images:', error);
     }
   }
 
-  // Create a new image object with a unique ID
-  const newImage = {
-    id: Date.now().toString(),
-    data: imageData,
-    timestamp: Date.now()
-  };
-  
   // Add the new image to the beginning of the array and remove duplicates
-  const updatedImages = [newImage, ...currentImages]
-    .map(image => typeof image === 'string' ? { id: Date.now().toString(), data: image, timestamp: Date.now() } : image)
+  const updatedImages = [imageData, ...currentImages]
     .filter((image, index, self) => 
       index === self.findIndex((t) => t.data === image.data)
     )
@@ -68,4 +63,18 @@ export const saveImage = (imageData: string) => {
   
   console.log('Saving images:', updatedImages);
   localStorage.setItem('previousImages', JSON.stringify(updatedImages));
+};
+
+export const removeImage = (id: string) => {
+  const storedImages = localStorage.getItem('previousImages');
+  if (storedImages) {
+    try {
+      const currentImages = JSON.parse(storedImages);
+      const updatedImages = currentImages.filter((img: any) => img.id !== id);
+      localStorage.setItem('previousImages', JSON.stringify(updatedImages));
+    } catch (error) {
+      console.error('Error removing image:', error);
+    }
+  }
+  // If the image is not in local storage (e.g., newly generated), we don't need to do anything
 };

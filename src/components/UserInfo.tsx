@@ -117,7 +117,7 @@ export function UserInfo(props: { session: { user: any } }) {
 
       <Show when={isDropdownOpen()}>
         <div 
-          class="dropdown-menu mt-2"
+          class="dropdown-menu"
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="user-menu"

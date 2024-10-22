@@ -22,6 +22,14 @@ app.use('*', cors({
 
 
 
+const PRICE_PER_MP = 0.0027;
+const DEFAULT_STEPS = {
+  'black-forest-labs/FLUX.1-schnell-Free': 2,
+  'black-forest-labs/FLUX.1-schnell': 4,
+  'black-forest-labs/FLUX.1.1-pro': 50,
+  // Add other models as needed
+};
+
 app.post('/api/generateImages', async (c) => {
   // Set CORS headers manually
   c.header('Access-Control-Allow-Origin', 'https://realtime-live-image-gen.pages.dev')
@@ -61,11 +69,23 @@ app.post('/api/generateImages', async (c) => {
     userAPIKey: z.string().optional(),
     iterativeMode: z.boolean().optional().default(false),
     model: z.string().optional().default('black-forest-labs/FLUX.1-schnell-Free'),
+    width: z.number().default(1024),
+    height: z.number().default(768),
+    steps: z.number().default(2)
   })
 
   try {
-    const body = await c.req.json()
-    const { prompt, userAPIKey, iterativeMode, model } = schema.parse(body)
+    const { prompt, userAPIKey, iterativeMode, model, width, height, steps } = schema.parse(await c.req.json())
+
+    // Calculate coin cost
+    const numberOfMP = (width * height) / 1000000;
+    const defaultSteps = DEFAULT_STEPS[model as keyof typeof DEFAULT_STEPS];
+    const coinCost = Math.ceil(numberOfMP * PRICE_PER_MP * (steps / defaultSteps) * 1000); // Multiply by 100 to convert to coins
+
+    // Check if user has enough coins (you'll need to implement this)
+    // if (!hasEnoughCoins(coinCost)) {
+    //   return c.json({ error: 'Insufficient coins' }, 400);
+    // }
 
     let selectedModel = 'black-forest-labs/FLUX.1-schnell-Free'
 
@@ -93,7 +113,8 @@ app.post('/api/generateImages', async (c) => {
       response_format: "base64",
     })
 
-    return c.json(response.data[0])
+    // Return the generated image data along with the coin cost
+    return c.json({ b64_json: response.data[0].b64_json, timings: { inference: 0 }, coinCost });
   } catch (error: any) {
     console.error('Error generating image:', error)
     return c.json({ error: error.toString() }, 500)

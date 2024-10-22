@@ -2,21 +2,16 @@ import { Show, createSignal, createEffect, For } from 'solid-js';
 import { downloadImage } from '../utils/imageUtils';
 import { Button } from './ui/button';
 import { supabase } from '../lib/supabase';
-import { createMutation, createQuery } from '@tanstack/solid-query';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/solid-query';
 import { useAuth } from '../hooks/useAuth';
+import { removeImage } from '@/hooks/usePreviousImages';
 
 
-// Add this interface definition
-interface LinkedAccount {
-  id: string;  // This is likely the Supabase ID
-  username: string;
-  twitter_account_id: string;  // Add this field for the actual Twitter account ID
-}
-
-  const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
+const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
 interface ImageModalProps {
-  imageData: string | null;
+  imageData: string;
+  imageId: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -35,6 +30,7 @@ const ImageModal = (props: ImageModalProps) => {
   const [isVisible, setIsVisible] = createSignal(false);
   const [isRendered, setIsRendered] = createSignal(false);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handleDownload = (e: Event) => {
     e.stopPropagation();
@@ -91,6 +87,12 @@ const ImageModal = (props: ImageModalProps) => {
     } else {
       console.error("No image data available");
     }
+  };
+
+  const handleDeleteImage = () => {
+    removeImage(props.imageId);
+    queryClient.invalidateQueries({ queryKey: ['previousImages'] });
+    closeModal();
   };
   
   const handleOutsideClick = (e: MouseEvent) => {
@@ -150,6 +152,15 @@ const ImageModal = (props: ImageModalProps) => {
                 {uploadMutation.isPending ? 'Saving...' : 'Save to R2'}
               </Button>
             </Show>
+            <Button
+              class="flex-1 px-6 py-2 bg-red-600 bg-opacity-80 text-white rounded-lg hover:bg-red-700 transition-colors shadow-md"
+              onClick={(e: MouseEvent) => {
+                e.stopPropagation();
+                handleDeleteImage();
+              }}
+            >
+              Delete
+            </Button>
           </div>
         </div>
       </div>

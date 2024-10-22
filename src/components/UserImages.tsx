@@ -3,10 +3,7 @@ import { createSignal, For, Show, onCleanup } from 'solid-js';
 import { supabase } from '../lib/supabase';
 import { z } from 'zod';
 import { UserImageModal } from './UserImageModal';
-import { useAuth } from '../hooks/useAuth';
 import { useQueryClient } from '@tanstack/solid-query';
-
-
 
 const UserImageSchema = z.object({
   id: z.string().uuid(),
@@ -17,11 +14,12 @@ const UserImageSchema = z.object({
 type UserImage = z.infer<typeof UserImageSchema>;
 
 export function UserImages() {
-  const { user } = useAuth();
+
   const [selectedImage, setSelectedImage] = createSignal<string | null>(null);
   const [isModalOpen, setIsModalOpen] = createSignal(false);
+  const [selectedImageCreatedAt, setSelectedImageCreatedAt] = createSignal<Date | null>(null);
   const queryClient = useQueryClient();
-  const [selectedImageUrl, setSelectedImageUrl] = createSignal<string | null>(null);
+
 
   const userImagesQuery = createQuery(() => ({
     queryKey: ['userImages'],
@@ -48,8 +46,6 @@ export function UserImages() {
     },
   }));
 
-
-
   // Set up real-time subscription
   const subscription = supabase
     .channel('user_images_changes')
@@ -73,22 +69,47 @@ export function UserImages() {
 
   return (
     <div class="mt-8">
-      <h2 class="text-2xl font-bold mb-4">Images stored in Cloudflare R2</h2>
+      <h2 class="text-2xl font-bold mb-4">Account saved images</h2>
       <Show when={!userImagesQuery.isLoading} fallback={<div>Loading...</div>}>
         <Show when={userImagesQuery.data} fallback={<div>No images found.</div>}>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <For each={userImagesQuery.data}>
               {(image: UserImage) => (
-                <div class="relative aspect-square">
+                <div 
+                  class="aspect-square bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all duration-300 relative group"
+                  onClick={() => {
+                    setSelectedImage(image.image_url);
+                    setSelectedImageCreatedAt(image.created_at);
+                    setIsModalOpen(true);
+                  }}
+                >
                   <img
                     src={image.image_url}
                     alt="Generated image"
-                    class="w-full h-full object-cover rounded-lg cursor-pointer"
-                    onClick={() => {
-                      setSelectedImage(image.image_url);
-                      setIsModalOpen(true);
-                    }}
+                    class="w-full h-full object-cover rounded-lg"
                   />
+                  <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                    <svg 
+                      class="w-8 h-8 text-white"
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round" 
+                        stroke-width="2" 
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path 
+                        stroke-linecap="round" 
+                        stroke-linejoin="round" 
+                        stroke-width="2" 
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
+                    </svg>
+                  </div>
                   <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
                     {image.created_at.toLocaleString()}
                   </div>
@@ -103,6 +124,7 @@ export function UserImages() {
           imageUrl={selectedImage()!}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
+          createdAt={selectedImageCreatedAt()}
         />
       </Show>
 

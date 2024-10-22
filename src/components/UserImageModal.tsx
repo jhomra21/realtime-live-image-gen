@@ -5,6 +5,7 @@ interface UserImageModalProps {
   imageUrl: string;
   isOpen: boolean;
   onClose: () => void;
+  createdAt: Date | null;
 
 }
 
@@ -44,9 +45,12 @@ export const UserImageModal = (props: UserImageModalProps) => {
         class={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-black transition-opacity duration-200 ease-in-out ${isVisible() ? 'bg-opacity-75 backdrop-blur-sm opacity-100' : 'bg-opacity-0 opacity-0'}`}
         onClick={handleOutsideClick}
       >
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full mx-4">
-          <h2 class="text-2xl font-bold mb-4">Share on Twitter</h2>
-          <img src={props.imageUrl} alt="Selected image" class="w-full h-auto mb-4 rounded" />
+        <div class="{`relative transition-all duration-200 ease-in-out ${isVisible() ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}">
+          
+          <img src={props.imageUrl} alt="Selected image" class="max-w-full max-h-[60vh] object-contain mx-auto" />
+          <div class="text-white text-sm bg-black bg-opacity-150 rounded-lg p-2 left-0 right-0 font-bold">
+            {props.createdAt?.toLocaleString()}
+          </div>
           
         </div>
       </div>

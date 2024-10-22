@@ -8,12 +8,17 @@ interface PreviousImagesProps {
 
 const PreviousImages = (props: PreviousImagesProps) => {
   const previousImages = usePreviousImages();
-  const [selectedImage, setSelectedImage] = createSignal<string | null>(null);
+  const [selectedImage, setSelectedImage] = createSignal<{ id: string; data: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = createSignal(false);
 
-  const handleImageClick = (imageData: string) => {
-    setSelectedImage(imageData);
+  const handleImageClick = (image: { id: string; data: string }) => {
+    setSelectedImage(image);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    previousImages.refetch(); // Refetch images after modal closes
   };
 
   return (
@@ -28,14 +33,14 @@ const PreviousImages = (props: PreviousImagesProps) => {
             <div class="absolute rounded-bl-lg bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400"></div>
             <div class="absolute rounded-br-lg bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-400"></div>
             
-            <h2 class="text-xl sm:text-2xl font-semibold text-blue-300 mb-6 text-center">Previously Generated Images</h2>
+            <h2 class="text-xl sm:text-2xl font-semibold text-blue-300 mb-6">Local Images</h2>
             
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <For each={previousImages.data}>
                 {(image) => (
                   <div 
                     class="aspect-square bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all duration-300 relative group"
-                    onClick={() => handleImageClick(image.data)}
+                    onClick={() => handleImageClick(image)}
                   >
                     <img 
                       src={`data:image/png;base64,${image.data}`} 
@@ -73,11 +78,14 @@ const PreviousImages = (props: PreviousImagesProps) => {
         </div>
       </Show>
 
-      <ImageModal
-        imageData={selectedImage()}
-        isOpen={isModalOpen()}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <Show when={selectedImage()}>
+        <ImageModal
+          imageData={selectedImage()?.data || ''}
+          imageId={selectedImage()?.id || ''}
+          isOpen={isModalOpen()}
+          onClose={handleCloseModal}
+        />
+      </Show>
     </div>
   );
 };

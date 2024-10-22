@@ -14,7 +14,8 @@ import {
   AccordionTrigger
 } from "@/components/ui/accordion"
 import { useAuth } from '@/hooks/useAuth'
-import { UserImageModal } from '@/components/UserImageModal'
+import UserCoins from '../UserCoins'
+import { useUserCoins } from '@/hooks/useUserCoins'
 import { supabase } from '@/lib/supabase'
 import { APIKeyDialog } from '@/components/APIKeyDialog'
 import { useSearchParams } from '@solidjs/router';
@@ -39,55 +40,10 @@ const GenerateImage = () => {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = createSignal(false)
   const [isModalOpen, setIsModalOpen] = createSignal(false)
   const [uploadedImageUrl, setUploadedImageUrl] = createSignal<string | null>(null)
-  const [isUserImageModalOpen, setIsUserImageModalOpen] = createSignal(false)
-  const [isTwitterLinked, setIsTwitterLinked] = createSignal(false);
-  const [linkedAccounts, setLinkedAccounts] = createSignal<Array<{ username: string }>>([])
+  const { coins, subtractCoins, hasEnoughCoins } = useUserCoins();  
   const [searchParams] = useSearchParams();
 
   const queryClient = useQueryClient()
-
-  const twitterLinkQuery = createQuery(() => ({
-    queryKey: ['twitterLink', (user() as any)?.id],
-    queryFn: async () => {
-      const currentUser = user();
-      if (!currentUser) return { linked: false, usernames: [] };
-      try {
-        const { data, error } = await supabase
-          .from('user_linked_accounts')
-          .select('provider, username')
-          .eq('user_id', (currentUser as any).id)
-          .eq('provider', 'twitter');
-
-        if (error) {
-          console.error('Error fetching Twitter links:', error);
-          return { linked: false, usernames: [] };
-        }
-
-        const usernames = data?.map(account => account.username) || [];
-        return { linked: usernames.length > 0, usernames };
-      } catch (error) {
-        console.error('Error fetching Twitter links:', error);
-        return { linked: false, usernames: [] };
-      }
-    },
-    enabled: !!user(),
-  }));
-
-  onMount(() => {
-    if (user()) {
-      twitterLinkQuery.refetch();
-    }
-  });
-
-  createEffect(() => {
-    if (twitterLinkQuery.data !== undefined) {
-      setIsTwitterLinked(twitterLinkQuery.data.linked);
-      // If you need to do something with the usernames:
-      // const usernames = twitterLinkQuery.data.usernames;
-    }
-  });
-
-  
 
   const premadePrompts = [
     "A serene landscape with a misty mountain lake at sunrise",
@@ -131,7 +87,11 @@ const GenerateImage = () => {
         if (!res.ok) {
           throw new Error(await res.text())
         }
-        const data = await res.json() as { b64_json: string; timings: { inference: number } }
+        const data = await res.json() as { b64_json: string; timings: { inference: number }, coinCost: number }
+        if (hasEnoughCoins(data.coinCost)) {
+          subtractCoins(data.coinCost)
+        }
+        
         setLastGeneratedImage(data.b64_json)
         return data
       } finally {
@@ -229,7 +189,7 @@ const GenerateImage = () => {
   createEffect(() => {
     const newImage = image.data?.b64_json || lastGeneratedImage()
     if (newImage) {
-      saveImage(newImage)
+      saveImage({ id: 'generated', data: newImage, timestamp: Date.now() })
       previousImages.refetch()
     }
   })
@@ -315,6 +275,7 @@ const GenerateImage = () => {
         <div class="mb-4">
           <div class="flex justify-between items-center mb-2">
             <h2 class="text-xl sm:text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
+            <UserCoins coins={coins()} />
             <div class="relative">
               <div
                 class={`relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md ${userAPIKey() ? 'cursor-pointer' : 'cursor-not-allowed'}`}
@@ -390,7 +351,7 @@ const GenerateImage = () => {
 
         {/* Image display section */}
         <div class="w-full aspect-video bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center relative border-2 border-gray-700 mb-4">
-          <Show when={lastGeneratedImage() || image.data}>
+          <Show when={lastGeneratedImage() || image.data?.b64_json}>
             <img
               src={`data:image/png;base64,${image.data?.b64_json || lastGeneratedImage()}`}
               alt="Generated image"
@@ -412,7 +373,7 @@ const GenerateImage = () => {
               <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-300 border-t-blue-600"></div>
             </div>
           </Show>
-          <Show when={!lastGeneratedImage() && !image.data && !isGeneratingNew()}>
+          <Show when={!lastGeneratedImage() && !image.data?.b64_json && !isGeneratingNew()}>
             <p class="text-gray-400">Your image will appear here</p>
           </Show>
         </div>
@@ -426,16 +387,10 @@ const GenerateImage = () => {
 
         {/* Image Modal for the main generated image */}
         <ImageModal
-          imageData={image.data?.b64_json || lastGeneratedImage()}
+          imageId="generated"  // Add this line
+          imageData={image.data?.b64_json || lastGeneratedImage() || ''}
           isOpen={isModalOpen()}
           onClose={handleCloseModal}
-        />
-
-        {/* Add UserImageModal */}
-        <UserImageModal
-          imageUrl={uploadedImageUrl() || ''}
-          isOpen={isUserImageModalOpen()}
-          onClose={() => setIsUserImageModalOpen(false)}
         />
 
         {/* Debug section */}
