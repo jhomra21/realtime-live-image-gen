@@ -1,15 +1,32 @@
-import { createSignal, createEffect } from 'solid-js';
+import { createSignal, createEffect, onCleanup } from 'solid-js';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { supabase } from '../lib/supabase';
-import { AccountSchema } from '../types/schema';
+import { AccountSchema, type Account } from '../types/schema';
 import { toast } from '@/components/ui/toast';
+import { z } from 'zod';
+
+// Query key constant
+const ACCOUNT_QUERY_KEY = ['account'] as const;
+
+// Validate realtime payload
+const RealtimeAccountPayloadSchema = z.object({
+  new: AccountSchema.partial(),
+  old: AccountSchema.partial(),
+  eventType: z.string(),
+  commit_timestamp: z.string(),
+  errors: z.nullable(z.any()),
+  schema: z.string(),
+  table: z.string()
+}).passthrough(); // Add passthrough to allow additional fields from Supabase
+
+type RealtimeAccountPayload = z.infer<typeof RealtimeAccountPayloadSchema>;
 
 export function useUserCoins() {
   const queryClient = useQueryClient();
   const [localCoins, setLocalCoins] = createSignal(0);
 
   const accountQuery = createQuery(() => ({
-    queryKey: ['account'],
+    queryKey: ACCOUNT_QUERY_KEY,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -24,6 +41,52 @@ export function useUserCoins() {
       return AccountSchema.parse(data);
     },
   }));
+
+  // Set up realtime subscription
+  createEffect(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const channel = supabase.channel('account_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accounts',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          try {
+            console.log('Raw payload:', payload); // Debug log
+            const validatedPayload = RealtimeAccountPayloadSchema.parse(payload);
+            console.log('Account change received:', validatedPayload);
+            
+            if (validatedPayload.new && Object.keys(validatedPayload.new).length > 0) {
+              const currentData = queryClient.getQueryData(ACCOUNT_QUERY_KEY) as Account | undefined;
+              const updatedData = {
+                ...currentData,
+                ...validatedPayload.new,
+              };
+              
+              queryClient.setQueryData(
+                ACCOUNT_QUERY_KEY, 
+                updatedData
+              );
+            }
+          } catch (error) {
+            console.error('Invalid realtime payload:', error);
+            console.error('Payload that caused error:', payload);
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription when component unmounts
+    onCleanup(() => {
+      channel.unsubscribe();
+    });
+  });
 
   createEffect(() => {
     if (accountQuery.data) {
@@ -55,9 +118,6 @@ export function useUserCoins() {
       });
       throw error;
     }
-
-    // Invalidate the query to trigger a refresh
-    queryClient.invalidateQueries({ queryKey: ['account'] });
   };
 
   const addCoins = async (amount: number) => {
@@ -81,9 +141,6 @@ export function useUserCoins() {
       });
       throw error;
     }
-
-    // Invalidate the query to trigger a refresh
-    queryClient.invalidateQueries({ queryKey: ['account'] });
   };
 
   const hasEnoughCoins = () => (accountQuery.data?.coins ?? 0) >= 4;
