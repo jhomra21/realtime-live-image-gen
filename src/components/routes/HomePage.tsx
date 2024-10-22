@@ -4,11 +4,22 @@ import { FiArrowRight } from 'solid-icons/fi';
 
 const HomePage = () => {
   return (
-    <div class="flex justify-center px-4 py-12 pb-24">
-      <div class="w-full max-w-5xl bg-gray-900/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+    <div class="flex justify-center px-4 py-4 pb-24">
+      <div class="w-full max-w-full bg-gray-900/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden">
         <div class="p-12">
           <section class="text-center mb-16">
-            <h1 class="text-6xl font-bold mb-6 text-white">Real-Time AI Image Generation</h1>
+            <div class="relative overflow-hidden rounded-lg mb-6">
+              <div class="absolute inset-0 bg-blue-600 opacity-75 blur-xl"></div>
+              <div class="relative bg-gray-900 bg-opacity-80 backdrop-blur-md p-6 shadow-lg">
+                <div class="absolute rounded-tl-lg top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-400"></div>
+                <div class="absolute rounded-tr-lg top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-400"></div>
+                <div class="absolute rounded-bl-lg bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-400"></div>
+                <div class="absolute rounded-br-lg bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-400"></div>
+
+                <h1 class="text-6xl font-bold mb-6 text-white">Real-Time AI Image Generation</h1>
+              </div>
+            </div>
+            
             <p class="text-2xl mb-10 text-gray-300">Harness the power of FLUX AI to create stunning visuals in seconds</p>
             <A
               href="/generate"
@@ -22,7 +33,7 @@ const HomePage = () => {
             <div>
               <h2 class="text-3xl font-bold mb-6 text-blue-300">Unleash Your Creativity</h2>
               <ul class="text-lg text-gray-300 space-y-4">
-                <li>• Generate unique images from text descriptions</li> 
+                <li>• Generate unique images from text descriptions</li>
                 <li>• Perfect for designers, marketers, and creatives</li>
                 <li>• Instantly bring your ideas to life</li>
               </ul>
@@ -60,15 +71,15 @@ const HomePage = () => {
             <h2 class="text-3xl font-bold mb-8 text-center text-blue-300">Powered by Cutting-Edge AI</h2>
             <div class="flex justify-center items-center space-x-16">
               <a href="https://blackforestlabs.ai/" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-lg shadow-md transition-transform hover:scale-105">
-                <img 
-                  src="/black-forest-labs-logo.png" 
+                <img
+                  src="/black-forest-labs-logo.png"
                   alt="Black Forest Labs Logo"
                   class="h-16 w-auto"
                 />
               </a>
               <a href="https://www.together.ai" target="_blank" rel="noopener noreferrer" class="bg-white p-6 rounded-lg shadow-md transition-transform hover:scale-105">
-                <img 
-                  src="/together-ai-logo.png" 
+                <img
+                  src="/together-ai-logo.png"
                   alt="Together AI Logo"
                   class="h-16 w-auto"
                 />

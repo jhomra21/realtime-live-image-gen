@@ -18,7 +18,8 @@ import UserCoins from '../UserCoins'
 import { useUserCoins } from '@/hooks/useUserCoins'
 import { supabase } from '@/lib/supabase'
 import { APIKeyDialog } from '@/components/APIKeyDialog'
-import { useSearchParams } from '@solidjs/router';
+import { A, useSearchParams } from '@solidjs/router';
+import { toast } from '@/components/ui/toast'
 
 const API_BASE_URL = import.meta.env.PROD ? 'https://realtime-image-gen-api.jhonra121.workers.dev' : 'http://127.0.0.1:8787';
 
@@ -78,6 +79,15 @@ const GenerateImage = () => {
       if (!prompt) return null;
 
       setIsGeneratingNew(true)
+      if (!hasEnoughCoins()) {
+        setIsGeneratingNew(false)
+        toast({
+          title: "Insufficient Coins",
+          description: `You need at least ${4} coins to generate this image. Current balance: ${coins()}`,
+          variant: "destructive"
+        })
+        throw new Error("Insufficient coins")
+      }
       try {
         const res = await fetch(`${API_BASE_URL}/api/generateImages`, {
           method: 'POST',
@@ -88,10 +98,10 @@ const GenerateImage = () => {
           throw new Error(await res.text())
         }
         const data = await res.json() as { b64_json: string; timings: { inference: number }, coinCost: number }
-        if (hasEnoughCoins(data.coinCost)) {
-          subtractCoins(data.coinCost)
-        }
         
+        
+
+        subtractCoins(data.coinCost)
         setLastGeneratedImage(data.b64_json)
         return data
       } finally {
@@ -189,7 +199,9 @@ const GenerateImage = () => {
   createEffect(() => {
     const newImage = image.data?.b64_json || lastGeneratedImage()
     if (newImage) {
-      saveImage({ id: 'generated', data: newImage, timestamp: Date.now() })
+      // make the id the date and time of generation
+      const id = Date.now().toString()
+      saveImage({ id: id, data: newImage, timestamp: Date.now() })
       previousImages.refetch()
     }
   })
@@ -208,7 +220,7 @@ const GenerateImage = () => {
 
   return (
     <div class="flex-grow flex flex-col items-center justify-start p-4 sm:p-6 overflow-y-auto">
-      <div class="w-full max-w-4xl mb-16"> {/* Added mb-16 for extra space at the bottom */}
+      <div class="w-full max-w-full mb-16"> {/* Added mb-16 for extra space at the bottom */}
         {/* Title section */}
         <div class="relative overflow-hidden rounded-lg mb-6">
           <div class="absolute inset-0 bg-blue-600 opacity-75 blur-xl"></div>
@@ -275,7 +287,11 @@ const GenerateImage = () => {
         <div class="mb-4">
           <div class="flex justify-between items-center mb-2">
             <h2 class="text-xl sm:text-2xl font-semibold text-blue-300">Enter Your Prompt</h2>
-            <UserCoins coins={coins()} />
+            <Show when={user()}>
+              <A href="/coins">
+                <UserCoins coins={coins()} />
+              </A>
+            </Show>
             <div class="relative">
               <div
                 class={`relative bg-gray-800 bg-opacity-80 backdrop-blur-sm p-2 rounded-lg shadow-md ${userAPIKey() ? 'cursor-pointer' : 'cursor-not-allowed'}`}

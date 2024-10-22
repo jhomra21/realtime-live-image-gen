@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-const INITIAL_COINS = 100;
+const INITIAL_COINS = 5;
 const STORAGE_KEY = 'userCoins';
 
 export function useUserCoins() {
@@ -16,11 +16,19 @@ export function useUserCoins() {
     localStorage.setItem(STORAGE_KEY, newCoinAmount.toString());
   };
 
-  const hasEnoughCoins = (amount: number) => coins() >= amount;
+  const addCoins = (amount: number) => {
+    const newCoinAmount = coins() + amount;
+    setCoins(newCoinAmount);
+    localStorage.setItem(STORAGE_KEY, newCoinAmount.toString());
+  };
+
+  //   hardcoded to 4 coins for now
+  const hasEnoughCoins = () => coins() >= 4;
 
   return {
     coins,
     subtractCoins,
+    addCoins,
     hasEnoughCoins,
   };
 }

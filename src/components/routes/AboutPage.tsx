@@ -1,12 +1,15 @@
 import { Component } from 'solid-js';
-import Footer from '../Footer';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
 const AboutPage: Component = () => {
   return (
-    <div class="flex flex-col min-h-screen">
-      <main class="flex-grow flex justify-center pt-8 px-4 pb-16">
-        <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-md max-w-4xl w-full border border-gray-700 overflow-hidden">
-          <div class="p-8 md:p-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
+      <Card class="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+        <CardHeader>
+          <h1 class="text-2xl font-bold text-center text-white">About</h1>
+        </CardHeader>
+        <CardContent>
+          <div class="prose prose-invert max-w-none">
             <header class="text-center mb-12">
               <h1 class="text-4xl sm:text-5xl font-bold mb-4">About Real Time Image Generation</h1>
               <p class="text-lg sm:text-xl text-gray-300">Powered by Together AI and Black Forest Labs Flux Models</p>
@@ -41,9 +44,8 @@ const AboutPage: Component = () => {
               </div>
             </section>
           </div>
-        </div>
-      </main>
-  
+        </CardContent>
+      </Card>
     </div>
   );
 };

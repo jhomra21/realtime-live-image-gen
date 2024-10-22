@@ -4,19 +4,19 @@ import { createQuery, QueryClient, QueryClientProvider } from '@tanstack/solid-q
 import { Router, Route, A, RouteSectionProps, useLocation } from '@solidjs/router'
 import HomePage from '../components/routes/HomePage'
 import GenerateImage from '../components/routes/GenerateImage'
+import AboutPage from '../components/routes/AboutPage'
+import CoinsPage from '../components/routes/CoinsPage'
 import { Auth } from '../components/Auth'
 import { supabase } from '../lib/supabase'
 import { UserInfo } from '../components/UserInfo'
 import { Session } from '@supabase/supabase-js'
 import '../app.css'
-import AboutPage from '../components/routes/AboutPage'
+
 import { Transition } from 'solid-transition-group';
 import Footer from '@/components/Footer'
 import { useAuth } from '../hooks/useAuth';
 
 import { ToastContainer } from '@/components/ui/toast'
-
-
 
 // const GenerateImage = lazy(() => import("../components/GenerateImage"));
 
@@ -92,7 +92,13 @@ const Nav = () => {
             >
               About
             </A> 
-           
+            <A 
+              href="/coins" 
+              class="text-white hover:text-blue-300 transition-colors border-b-2 border-transparent hover:border-blue-300" 
+              activeClass="text-blue-300 border-blue-300"
+            >
+              Coins
+            </A>
             {user() ? (
               <UserInfo session={{ user: user() }} />
             ) : (
@@ -142,6 +148,13 @@ const Nav = () => {
           >
             About
           </A>
+          <A
+            href="/coins"
+            class="block px-3 py-2 rounded-md text-base font-medium text-white hover:text-blue-300 hover:bg-gray-800"
+            activeClass="text-blue-300 bg-gray-800"
+          >
+            Coins
+          </A>
         
           <div class="px-3 py-2">
             {user() ? (
@@ -183,6 +196,7 @@ const App: Component = () => {
         <Route path="/" component={HomePage} />
         <Route path="/generate" component={GenerateImage} />
         <Route path="/about" component={AboutPage} />
+        <Route path="/coins" component={CoinsPage} />
         <Route path="/login" component={Auth} />
         <Route path="/signup" component={Auth} />
       </Router>

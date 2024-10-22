@@ -37,9 +37,13 @@ export function useAuth() {
     // Remove user-related data from localStorage
     // Preserve 'previousImages' in localStorage
     const previousImages = localStorage.getItem('previousImages');
+    const previousUserCoins = localStorage.getItem('userCoins');
     localStorage.clear();
     if (previousImages) {
       localStorage.setItem('previousImages', previousImages);
+    }
+    if (previousUserCoins) {
+      localStorage.setItem('userCoins', previousUserCoins);
     }
 
     // Clear all session storage

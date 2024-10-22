@@ -4,11 +4,7 @@ import { z } from 'zod' // Import zod for request validation
 import { createQuery } from '@tanstack/solid-query'
 import { useAuth } from '../hooks/useAuth'
 import './UserInfo.css'; // Make sure this import is present
-
-// Define a schema for profile data
-const ProfileSchema = z.object({
-  username: z.string().nullable(),
-})
+import { AccountSchema } from '../types/schema';
 
 export function UserInfo(props: { session: { user: any } }) {
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false)
@@ -17,29 +13,29 @@ export function UserInfo(props: { session: { user: any } }) {
   const [error, setError] = createSignal<string | null>(null)
   let dropdownRef: HTMLDivElement | undefined
 
-  const profileQuery = createQuery(() => ({
-    queryKey: ['profile', props.session.user.id],
+  const accountQuery = createQuery(() => ({
+    queryKey: ['account', props.session.user.id],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from('profiles')
-          .select(`username`)
-          .eq('id', props.session.user.id)
+          .from('accounts')
+          .select('*')
+          .eq('user_id', props.session.user.id)
           .single();
 
         if (error) throw error;
 
-        return ProfileSchema.parse(data);
+        return AccountSchema.parse(data);
       } catch (error) {
-        console.error('Error fetching profile:', error);
-        return { username: null };
+        console.error('Error fetching account:', error);
+        throw error;
       }
-    },
-  }))
+    }
+  }));
 
   createEffect(() => {
-    if (profileQuery.data) {
-      setUsername(profileQuery.data.username)
+    if (accountQuery.data) {
+      setUsername(accountQuery.data.username)
     }
   })
 
@@ -70,7 +66,7 @@ export function UserInfo(props: { session: { user: any } }) {
         updated_at: new Date(),
       }
 
-      const UpdateSchema = ProfileSchema.extend({ 
+      const UpdateSchema = AccountSchema.extend({ 
         id: z.string(), 
         updated_at: z.date() 
       })
@@ -175,9 +171,9 @@ export function UserInfo(props: { session: { user: any } }) {
                 <button
                   type="submit"
                   class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  disabled={profileQuery.isLoading}
+                  disabled={accountQuery.isLoading}
                 >
-                  {profileQuery.isLoading ? 'Saving...' : 'Save'}
+                  {accountQuery.isLoading ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
