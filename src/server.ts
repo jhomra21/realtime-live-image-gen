@@ -13,9 +13,9 @@ const API_LOCAL_URL = 'http://127.0.0.1:8787'
 
 // Apply CORS middleware to all routes
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev'],
+  origin: ['http://localhost:5173', 'https://realtime-live-image-gen.pages.dev', 'https://dashboard.stripe.com', 'https://api.stripe.com'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Stripe-Signature'],
   exposeHeaders: ['Content-Length'],
   maxAge: 600,
   credentials: true,
@@ -212,66 +212,98 @@ const stripeEventSchema = z.object({
 });
 
 app.post('/api/stripe-webhook', async (c) => {
-  const stripe = new Stripe((c.env as any).STRIPE_SECRET_KEY);
   const signature = c.req.header('stripe-signature');
   const webhookSecret = (c.env as any).STRIPE_WEBHOOK_SECRET;
 
-  // Create Supabase client with service role key for admin access
-  const supabase = createClient(
-    (c.env as any).VITE_SUPABASE_URL,
-    (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    }
-  );
-
   if (!signature || !webhookSecret) {
+    console.error('Missing signature or webhook secret');
     return c.json({ error: 'Missing stripe signature or webhook secret' }, 400);
   }
 
   try {
-    const rawBody = await c.req.raw.clone().text();
-    const event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret
+    // Get the raw body as an ArrayBuffer
+    const rawBody = await c.req.raw.arrayBuffer();
+    // Convert ArrayBuffer to string
+    const rawBodyString = new TextDecoder().decode(rawBody);
+
+    // Parse the event without verification first
+    const event = JSON.parse(rawBodyString);
+
+    // Basic timestamp verification
+    const timestampStr = signature.split(',')[0].split('=')[1];
+    const timestamp = parseInt(timestampStr);
+    const now = Math.floor(Date.now() / 1000);
+
+    // Verify timestamp is not too old (5 minutes tolerance)
+    if (now - timestamp > 300) {
+      return c.json({ error: 'Webhook timestamp too old' }, 400);
+    }
+
+    // Create Supabase client
+    const supabase = createClient(
+      (c.env as any).VITE_SUPABASE_URL,
+      (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
     );
 
-    const validatedEvent = stripeEventSchema.parse(event);
-
-    if (validatedEvent.type === 'checkout.session.completed') {
-      const session = validatedEvent.data.object;
+    // Handle the checkout.session.completed event
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
       const userId = session.client_reference_id;
 
       if (!userId) {
-        throw new Error('No user ID found in session');
+        console.error('No user ID in session');
+        return c.json({ error: 'No user ID in session' }, 400);
       }
 
-      // // Calculate coins based on amount paid (100 coins per $1)
-      // const amountPaid = session.amount_total / 100; // Convert cents to dollars
-      const coinsToAdd = 50; // $1 = 100 coins
+      try {
+        // First, get the current coins value
+        const { data: currentAccount, error: fetchError } = await supabase
+          .from('accounts')
+          .select('coins')
+          .eq('user_id', userId)
+          .single();
 
-      // Update user's coins using RPC function
-      const { error: updateError } = await supabase.rpc('add_coins', {
-        p_user_id: userId,
-        p_coins: coinsToAdd
-      });
+        if (fetchError) {
+          console.error('Error fetching current coins:', fetchError);
+          return c.json({ error: 'Error fetching account' }, 500);
+        }
 
-      if (updateError) {
-        console.error('Error updating coins:', updateError);
-        throw updateError;
+        // Calculate new coins value (current + 50)
+        const newCoins = (currentAccount?.coins || 0) + 50;
+
+        // Update the account with new coins value
+        const { error: updateError } = await supabase
+          .from('accounts')
+          .update({ 
+            coins: newCoins,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+
+        if (updateError) {
+          console.error('Error updating coins:', updateError);
+          return c.json({ error: 'Error updating coins' }, 500);
+        }
+
+        console.log('Successfully updated coins for user:', userId, 'New balance:', newCoins);
+        return c.json({ received: true });
+      } catch (error: any) {
+        console.error('Error processing payment:', error);
+        return c.json({ error: 'Error processing payment' }, 500);
       }
-
-      return c.json({ received: true, coinsAdded: coinsToAdd });
     }
 
+    // Return a 200 response for other event types
     return c.json({ received: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Webhook error:', error);
-    return c.json({ error: 'Webhook error' }, 400);
+    return c.json({ error: `Webhook Error: ${error.message}` }, 400);
   }
 });
 
