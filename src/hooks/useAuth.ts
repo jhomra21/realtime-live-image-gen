@@ -6,13 +6,17 @@ export function useAuth() {
 
   createEffect(() => {
     console.log("Auth effect running");
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session error:", error);
+        return;
+      }
       console.log("Got session:", session);
       setUser(session?.user ?? null as any);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event, session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       setUser(session?.user ?? null as any);
     });
 

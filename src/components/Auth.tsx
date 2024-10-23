@@ -2,6 +2,7 @@ import { createSignal } from 'solid-js'
 import { supabase } from '../lib/supabase'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { Button } from './ui/button'
+import { toast } from '@/components/ui/toast'
 
 export function Auth() {
   const [loading, setLoading] = createSignal(false)
@@ -11,13 +12,31 @@ export function Auth() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
       })
-      if (error) throw error
+      
+      if (error) {
+        console.error('Auth error:', error)
+        throw error
+      }
+      
+      console.log('Auth success:', data)
       setOpen(false)
     } catch (error: any) {
-      alert(error.error_description || error.message)
+      console.error('Sign in error:', error)
+      toast({
+        title: "Authentication Error",
+        description: error.message || "Failed to sign in",
+        variant: "destructive"
+      })
     } finally {
       setLoading(false)
     }
