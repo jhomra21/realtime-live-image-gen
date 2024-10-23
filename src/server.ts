@@ -216,7 +216,6 @@ app.post('/api/stripe-webhook', async (c) => {
   const signature = c.req.header('stripe-signature');
   const webhookSecret = (c.env as any).STRIPE_WEBHOOK_SECRET;
 
- 
   // Create Supabase client with service role key for admin access
   const supabase = createClient(
     (c.env as any).VITE_SUPABASE_URL,
@@ -251,18 +250,15 @@ app.post('/api/stripe-webhook', async (c) => {
         throw new Error('No user ID found in session');
       }
 
-      // Calculate coins based on amount paid (100 coins per $1)
-      const amountPaid = session.amount_total / 100; // Convert cents to dollars
-      const coinsToAdd = Math.floor(amountPaid * 100); // $1 = 100 coins
+      // // Calculate coins based on amount paid (100 coins per $1)
+      // const amountPaid = session.amount_total / 100; // Convert cents to dollars
+      const coinsToAdd = 50; // $1 = 100 coins
 
-      // Update user's coins directly in Supabase
-      const { error: updateError } = await supabase
-        .from('accounts')
-        .update({ 
-          coins: supabase.rpc('add_coins', { p_user_id: userId, p_coins: coinsToAdd }),
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
+      // Update user's coins using RPC function
+      const { error: updateError } = await supabase.rpc('add_coins', {
+        p_user_id: userId,
+        p_coins: coinsToAdd
+      });
 
       if (updateError) {
         console.error('Error updating coins:', updateError);
