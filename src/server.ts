@@ -4,7 +4,8 @@ import { z } from 'zod'
 import Together from 'together-ai'
 import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
-
+import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
 const app = new Hono()
 
@@ -159,5 +160,123 @@ app.post('/api/uploadImage', async (c) => {
     return c.json({ error: 'Failed to upload image', details: error instanceof Error ? error.message : String(error) }, 500);
   }
 })
+
+app.post('/api/create-checkout-session', async (c) => {
+  const stripe = new Stripe((c.env as any).STRIPE_SECRET_KEY);
+  
+  try {
+    const body = await c.req.json();
+    const { userId, productId } = body;
+
+    if (!userId || !productId) {
+      return c.json({ error: 'Missing required parameters' }, 400);
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product: productId,
+            unit_amount: 999, // $9.99
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${(c.env as any).CLOUDFLARE_PAGES_URL}/coins?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${(c.env as any).CLOUDFLARE_PAGES_URL}/coins`,
+      client_reference_id: userId,
+    });
+
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error('Stripe session creation error:', error);
+    return c.json({ error: 'Failed to create checkout session' }, 500);
+  }
+});
+
+// Add this validation schema
+const stripeEventSchema = z.object({
+  type: z.string(),
+  data: z.object({
+    object: z.object({
+      id: z.string(),
+      client_reference_id: z.string().optional(),
+      amount_total: z.number(),
+      payment_status: z.string(),
+      status: z.string(),
+    }),
+  }),
+});
+
+app.post('/api/stripe-webhook', async (c) => {
+  const stripe = new Stripe((c.env as any).STRIPE_SECRET_KEY);
+  const signature = c.req.header('stripe-signature');
+  const webhookSecret = (c.env as any).STRIPE_WEBHOOK_SECRET;
+
+ 
+  // Create Supabase client with service role key for admin access
+  const supabase = createClient(
+    (c.env as any).VITE_SUPABASE_URL,
+    (c.env as any).VITE_SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+
+  if (!signature || !webhookSecret) {
+    return c.json({ error: 'Missing stripe signature or webhook secret' }, 400);
+  }
+
+  try {
+    const rawBody = await c.req.raw.clone().text();
+    const event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      webhookSecret
+    );
+
+    const validatedEvent = stripeEventSchema.parse(event);
+
+    if (validatedEvent.type === 'checkout.session.completed') {
+      const session = validatedEvent.data.object;
+      const userId = session.client_reference_id;
+
+      if (!userId) {
+        throw new Error('No user ID found in session');
+      }
+
+      // Calculate coins based on amount paid (100 coins per $1)
+      const amountPaid = session.amount_total / 100; // Convert cents to dollars
+      const coinsToAdd = Math.floor(amountPaid * 100); // $1 = 100 coins
+
+      // Update user's coins directly in Supabase
+      const { error: updateError } = await supabase
+        .from('accounts')
+        .update({ 
+          coins: supabase.rpc('add_coins', { p_user_id: userId, p_coins: coinsToAdd }),
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('Error updating coins:', updateError);
+        throw updateError;
+      }
+
+      return c.json({ received: true, coinsAdded: coinsToAdd });
+    }
+
+    return c.json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return c.json({ error: 'Webhook error' }, 400);
+  }
+});
 
 export default app
