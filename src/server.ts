@@ -6,6 +6,7 @@ import { Redis } from '@upstash/redis/cloudflare'
 import { Ratelimit } from '@upstash/ratelimit'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 const app = new Hono()
 
@@ -304,6 +305,100 @@ app.post('/api/stripe-webhook', async (c) => {
   } catch (error: any) {
     console.error('Webhook error:', error);
     return c.json({ error: `Webhook Error: ${error.message}` }, 400);
+  }
+});
+
+// Add this after your existing endpoints
+app.post('/api/uploadTrainingImages', async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const files = formData.getAll('images') as File[];
+
+    if (!files || files.length === 0) {
+      return c.json({ error: 'No images provided' }, 400);
+    }
+
+    const bucket = (c.env as any).TRAINING_DATA_BUCKET;
+    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN;
+
+    if (!bucket || typeof bucket.put !== 'function') {
+      console.error('R2 training bucket not properly configured:', bucket);
+      throw new Error('R2 training bucket not properly configured');
+    }
+
+    const uploadResults = await Promise.all(
+      files.map(async (file) => {
+        const filename = `training_${Date.now()}_${crypto.randomUUID()}_${file.name}`;
+        const arrayBuffer = await file.arrayBuffer();
+
+        await bucket.put(filename, arrayBuffer, {
+          httpMetadata: { contentType: file.type },
+        });
+
+        return {
+          originalName: file.name,
+          url: `https://${r2PublicDomain}/${filename}`
+        };
+      })
+    );
+
+    return c.json({ 
+      success: true,
+      files: uploadResults 
+    });
+  } catch (error) {
+    console.error('Error uploading training images:', error);
+    return c.json({ 
+      error: 'Failed to upload training images', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, 500);
+  }
+});
+
+// Add this new endpoint for zip file upload
+app.post('/api/uploadTrainingZip', async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const zipFile = formData.get('zipFile') as File | null;
+
+    if (!zipFile) {
+      return c.json({ error: 'No zip file provided' }, 400);
+    }
+
+    const bucket = (c.env as any).TRAINING_DATA_BUCKET;
+    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN;
+
+    if (!bucket || typeof bucket.put !== 'function') {
+      console.error('R2 training bucket not properly configured:', bucket);
+      throw new Error('R2 training bucket not properly configured');
+    }
+
+    // Generate a unique filename for the zip
+    const filename = `training_${Date.now()}_${crypto.randomUUID()}.zip`;
+
+    // Read the zip file content
+    const arrayBuffer = await zipFile.arrayBuffer();
+
+    // Upload the zip file to R2
+    await bucket.put(filename, arrayBuffer, {
+      httpMetadata: { 
+        contentType: 'application/zip',
+        contentDisposition: 'attachment; filename=' + filename
+      },
+    });
+
+    const publicUrl = `https://${r2PublicDomain}/${filename}`;
+    
+    return c.json({ 
+      success: true,
+      url: publicUrl
+    });
+  } catch (error) {
+    console.error('Error uploading training zip:', error);
+    return c.json({ 
+      error: 'Failed to upload training zip', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, 500);
   }
 });
 

@@ -6,6 +6,7 @@ import HomePage from '../components/routes/HomePage'
 import GenerateImage from '../components/routes/GenerateImage'
 import AboutPage from '../components/routes/AboutPage'
 import CoinsPage from '../components/routes/CoinsPage'
+import TrainingPage from '../components/routes/TrainingPage'
 import { Auth } from '../components/Auth'
 import { supabase } from '../lib/supabase'
 import { UserInfo } from '../components/UserInfo'
@@ -100,6 +101,13 @@ const Nav = () => {
             >
               Coins
             </A>
+            <A 
+              href="/training" 
+              class="text-white hover:text-blue-300 transition-colors border-b-2 border-transparent hover:border-blue-300" 
+              activeClass="text-blue-300 border-blue-300"
+            >
+              Training
+            </A>
             {user() ? (
               <UserInfo session={{ user: user() }} />
             ) : (
@@ -156,6 +164,13 @@ const Nav = () => {
           >
             Coins
           </A>
+          <A
+            href="/training"
+            class="block px-3 py-2 rounded-md text-base font-medium text-white hover:text-blue-300 hover:bg-gray-800"
+            activeClass="text-blue-300 bg-gray-800"
+          >
+            Training
+          </A>
         
           <div class="px-3 py-2">
             {user() ? (
@@ -200,6 +215,7 @@ const App: Component = () => {
         <Route path="/coins" component={CoinsPage} />
         <Route path="/login" component={Auth} />
         <Route path="/signup" component={Auth} />
+        <Route path="/training" component={TrainingPage} />
       </Router>
       <ToastContainer />
       <Footer />
