@@ -308,52 +308,6 @@ app.post('/api/stripe-webhook', async (c) => {
   }
 });
 
-// Add this after your existing endpoints
-app.post('/api/uploadTrainingImages', async (c) => {
-  try {
-    const formData = await c.req.formData();
-    const files = formData.getAll('images') as File[];
-
-    if (!files || files.length === 0) {
-      return c.json({ error: 'No images provided' }, 400);
-    }
-
-    const bucket = (c.env as any).TRAINING_DATA_BUCKET;
-    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN;
-
-    if (!bucket || typeof bucket.put !== 'function') {
-      console.error('R2 training bucket not properly configured:', bucket);
-      throw new Error('R2 training bucket not properly configured');
-    }
-
-    const uploadResults = await Promise.all(
-      files.map(async (file) => {
-        const filename = `training_${Date.now()}_${crypto.randomUUID()}_${file.name}`;
-        const arrayBuffer = await file.arrayBuffer();
-
-        await bucket.put(filename, arrayBuffer, {
-          httpMetadata: { contentType: file.type },
-        });
-
-        return {
-          originalName: file.name,
-          url: `https://${r2PublicDomain}/${filename}`
-        };
-      })
-    );
-
-    return c.json({ 
-      success: true,
-      files: uploadResults 
-    });
-  } catch (error) {
-    console.error('Error uploading training images:', error);
-    return c.json({ 
-      error: 'Failed to upload training images', 
-      details: error instanceof Error ? error.message : String(error) 
-    }, 500);
-  }
-});
 
 // Add this new endpoint for zip file upload
 app.post('/api/uploadTrainingZip', async (c) => {
