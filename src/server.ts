@@ -137,7 +137,7 @@ app.post('/api/uploadImage', async (c) => {
     }
 
     const bucket = (c.env as any).USER_IMAGES_BUCKET || process.env.USER_IMAGES_BUCKET;
-    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN || process.env.R2_PUBLIC_DOMAIN;
+    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN_IMAGES || process.env.R2_PUBLIC_DOMAIN_IMAGES;  // Use images domain
 
     if (!bucket || typeof bucket.put !== 'function') {
       console.error('R2 bucket not properly configured:', bucket);
@@ -366,7 +366,7 @@ app.post('/api/uploadTrainingZip', async (c) => {
     }
 
     const bucket = (c.env as any).TRAINING_DATA_BUCKET;
-    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN;
+    const r2PublicDomain = (c.env as any).R2_PUBLIC_DOMAIN_TRAINING;  // Use training domain
 
     if (!bucket || typeof bucket.put !== 'function') {
       console.error('R2 training bucket not properly configured:', bucket);
